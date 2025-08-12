@@ -7,9 +7,9 @@
 <p align="center"><b>Track • Save • Grow</b> – Smart personal finance web app (React + Spring Boot)</p>
 
 <p align="center">
-  <img src="https://img.shields.io/github/license/your-username/finsage?color=brightgreen" alt="License" />
-  <img src="https://img.shields.io/github/stars/your-username/finsage" alt="Stars" />
-  <img src="https://img.shields.io/github/forks/your-username/finsage" alt="Forks" />
+  <img src="https://img.shields.io/github/license/divyanshkande/finsage?color=brightgreen" alt="License" />
+  <img src="https://img.shields.io/github/stars/divyanshkande/finsage" alt="Stars" />
+  <img src="https://img.shields.io/github/forks/divyanshkande/finsage" alt="Forks" />
   <img src="https://img.shields.io/badge/Full%20Stack-React%20%26%20Spring%20Boot-blue" alt="Tech Stack" />
 </p>
 
@@ -43,7 +43,8 @@ Finsage is a full-stack personal finance app to track income, expenses, budgets,
 - Google OAuth 2.0 login
 - Budget event management (create / track events)
 - Responsive UI
-
+- User authentication & authorization
+- Expense Management with proper listing and categorization
 ---
 
 ## 🛠 Tech Stack
@@ -56,3 +57,51 @@ Finsage is a full-stack personal finance app to track income, expenses, budgets,
 ---
 
 ## 📁 Repository Structure
+finsage/
+│
+├── backend/ # Spring Boot backend source code
+│ ├── src/
+│ ├── .env # Environment variables for backend (DB, mail credentials)
+│ ├── pom.xml
+│
+├── frontend/ # React frontend source code
+│ ├── src/
+│ ├── package.json
+│
+├── README.md
+└──package.json
+
+
+
+---
+
+## 📸 Screenshots
+
+![Dashboard](path-to-your-screenshot1.png)  
+*Dashboard showing expenses overview*
+
+![Add Transaction](path-to-your-screenshot2.png)  
+*Form to add new transactions*
+
+
+
+## 🛠 Installation & Setup
+
+### 📌 Prerequisites
+- Ensure you have **Node.js** and **MySQL** installed on your machine.
+
+---
+
+### 🛠 Clone the repository
+```bash
+git clone https://github.com/divyanshkande/finsage.git
+cd finsage
+
+🔧 Backend Setup
+cd backend
+npm install
+
+🎨 Frontend Setup
+cd frontend
+npm install
+npm start

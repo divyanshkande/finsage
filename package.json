@@ -1,0 +1,24 @@
+{
+  "name": "finsage",
+  "version": "1.0.0",
+  "description": "<!-- Banner -->\r <p align=\"center\">\r   <img src=\"https://your-banner-image-link.com/banner.png\" alt=\"Finsage Banner\" width=\"100%\"/>\r </p>",
+  "main": "index.js",
+  "scripts": {
+  "start": "concurrently \"mvn -f backend/pom.xml spring-boot:run\" \"npm start --prefix frontend\""
+}
+,
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/divyanshkande/finsage.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/divyanshkande/finsage/issues"
+  },
+  "homepage": "https://github.com/divyanshkande/finsage#readme",
+  "dependencies": {
+    "concurrently": "^9.2.0"
+  }
+}

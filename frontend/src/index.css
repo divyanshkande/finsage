@@ -1,0 +1,56 @@
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+
+body {
+  @apply bg-white text-gray-800 font-sans;
+}
+.input {
+  @apply w-full p-2 mb-4 border border-gray-300 rounded;
+}
+
+.btn {
+  @apply bg-blue-500 hover:bg-blue-600 text-white py-2 px-4 rounded;
+}
+html {
+  scroll-behavior: smooth;
+}
+
+
+body {
+  overflow-x: hidden;
+}
+
+
+html {
+  font-size: 100%;
+}
+
+@media (max-width: 375px) {
+  html {
+    font-size: 90%;
+  }
+}
+@media (max-width: 330px) {
+  nav {
+    flex-direction: column !important;
+    align-items: flex-start !important;
+    padding: 0.5rem 1rem;
+  }
+
+  nav .space-x-4 {
+    flex-direction: column !important;
+    gap: 0.5rem !important;
+  }
+
+  nav .text-xl {
+    font-size: 1rem;
+  }
+
+  nav button,
+  nav a {
+    font-size: 0.875rem; 
+  }
+}

@@ -1,23 +1,40 @@
 // src/services/expenseService.js
-import axios from 'axios';
+import axios from "axios";
 
-export const filterExpenses = async (category, date, token) => {
-  const params = new URLSearchParams();
-  if (category) params.append("category", category);
-  if (date) params.append("date", date);
+const API_BASE = process.env.REACT_APP_API_URL || "http://localhost:8080/api";
 
-  const res = await fetch(`http://localhost:8080/api/expenses/filter?${params.toString()}`, {
-    method: "GET",
-    headers: {
-      Authorization: `Bearer ${token}`,
-      "Content-Type": "application/json"
-    },
-    credentials: "include"
-  });
+// Add auth header automatically
+const authHeader = () => ({
+  headers: {
+    Authorization: `Bearer ${localStorage.getItem("token")}`,
+    "Content-Type": "application/json",
+  },
+  withCredentials: true,
+});
 
-  if (!res.ok) {
-    throw new Error(`Request failed with status code ${res.status}`);
-  }
+export const getExpenses = async () => {
+  const res = await axios.get(`${API_BASE}/expenses/all`, authHeader());
+  return res.data;
+};
 
-  return res.json();
+export const deleteExpense = async (id) => {
+  await axios.delete(`${API_BASE}/expenses/${id}`, authHeader());
+};
+
+export const getMonthlySummary = async () => {
+  const res = await axios.get(`${API_BASE}/expenses/summary/monthly`, authHeader());
+  return Object.entries(res.data).map(([month, amount]) => ({ month, amount }));
+};
+
+export const getCategorySummary = async () => {
+  const res = await axios.get(`${API_BASE}/expenses/summary/category`, authHeader());
+  return Object.entries(res.data).map(([category, amount]) => ({
+    name: category,
+    value: amount,
+  }));
+};
+
+export const getSummary = async () => {
+  const res = await axios.get(`${API_BASE}/expenses/summary`, authHeader());
+  return res.data;
 };

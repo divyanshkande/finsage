@@ -119,6 +119,11 @@
             <artifactId>spring-security-test</artifactId>
             <scope>test</scope>
         </dependency>
+        <dependency>
+    <groupId>org.json</groupId>
+    <artifactId>json</artifactId>
+    <version>20231013</version>   <!-- or latest: 20240915 at the time of writing -->
+</dependency>
     </dependencies>
 
     <build>

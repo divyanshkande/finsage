@@ -9,8 +9,19 @@ function Savings() {
   const [summary, setSummary] = useState(null);
   const [monthlyData, setMonthlyData] = useState([]);
   const [goals, setGoals] = useState([]);
-  const [newGoal, setNewGoal] = useState({ name: '', amount: '' });
+  const [newGoal, setNewGoal] = useState({ name: '', amount: '' }); // existing goal add for DB
   const [topCategory, setTopCategory] = useState(null);
+
+  // AI advisor states
+  const [advisorInput, setAdvisorInput] = useState({
+    salary: '',
+    expenses: '',
+    goals: [] // { name, amount }
+  });
+  const [aiNewGoal, setAiNewGoal] = useState({ name: '', amount: '' }); // temp input for advisor goals
+  const [aiLoading, setAiLoading] = useState(false);
+  const [aiResult, setAiResult] = useState(null);
+  const [aiError, setAiError] = useState(null);
 
   const navigate = useNavigate();
   const token = localStorage.getItem("token");
@@ -50,9 +61,7 @@ function Savings() {
       });
       if (res.ok) {
         const data = await res.json();
-        // transform into sorted array by month key for predictable order
         const transformed = Object.entries(data).map(([month, value]) => ({ month, value }));
-        // optional: sort by month string if needed (assumes YYYY-MM or similar)
         transformed.sort((a, b) => a.month.localeCompare(b.month));
         setMonthlyData(transformed);
       }
@@ -112,7 +121,6 @@ function Savings() {
       );
 
       if (res.ok) {
-        // friendly UX: re-fetch and show small toast (alert for now)
         await fetchSummary();
         alert("Income updated successfully");
       } else {
@@ -163,6 +171,93 @@ function Savings() {
       fetchGoals();
     } catch (err) {
       console.error("deleteGoal error", err);
+    }
+  };
+
+  const addAiGoal = () => {
+    if (!aiNewGoal.name || !aiNewGoal.amount) {
+      alert("Please enter both name and amount for AI goal");
+      return;
+    }
+    const parsedAmount = Number(aiNewGoal.amount);
+    if (isNaN(parsedAmount) || parsedAmount <= 0) {
+      alert("Enter a valid positive amount");
+      return;
+    }
+    setAdvisorInput({
+      ...advisorInput,
+      goals: [...advisorInput.goals, { name: aiNewGoal.name.trim(), amount: parsedAmount }]
+    });
+    setAiNewGoal({ name: '', amount: '' });
+  };
+
+  const removeAiGoal = (idx) => {
+    const copy = [...advisorInput.goals];
+    copy.splice(idx, 1);
+    setAdvisorInput({ ...advisorInput, goals: copy });
+  };
+
+  // AI call - calls backend which calls OpenRouter / Sherlock
+  const generateAdvice = async () => {
+    setAiError(null);
+    setAiResult(null);
+
+    // Basic validation
+    const salaryNum = Number(advisorInput.salary || 0);
+    const expensesNum = Number(advisorInput.expenses || 0);
+    if (salaryNum <= 0) {
+      setAiError("Please enter a valid salary (> 0).");
+      return;
+    }
+    if (isNaN(expensesNum) || expensesNum < 0) {
+      setAiError("Please enter valid expenses (>= 0).");
+      return;
+    }
+
+    setAiLoading(true);
+    try {
+      const body = {
+        salary: salaryNum,
+        expenses: expensesNum,
+        goals: advisorInput.goals.reduce((acc, g) => {
+          acc[g.name] = Number(g.amount);
+          return acc;
+        }, {})
+      };
+
+      const res = await fetch("http://localhost:8080/api/savings/plan", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`
+        },
+        credentials: "include",
+        body: JSON.stringify(body)
+      });
+
+      const data = await res.json();
+      if (!res.ok) {
+        const message = data && data.message ? data.message : "AI request failed";
+        setAiError(message);
+      } else {
+        // Backend may return varied structure. Normalize common fields.
+        // Prefer structured JSON parsing fields (idealSavings, sipAmount, safeToSpend, recommendedTimelineMonths, goalTimelineMonths, monthlyPlan)
+        const normalized = {
+          idealSavings: data.idealSavings ?? data.monthlySavings ?? null,
+          sipAmount: data.sipAmount ?? data.sipAmount ?? null,
+          safeToSpend: data.safeToSpend ?? null,
+          recommendedTimelineMonths: data.recommendedTimelineMonths ?? data.recommendedTimelineMonths ?? null,
+          goalTimelineMonths: data.goalTimelineMonths ?? data.goalPlans ?? null,
+          monthlyPlan: data.monthlyPlan ?? data.monthlyPlan ?? [],
+          rawText: data.rawText ?? JSON.stringify(data)
+        };
+        setAiResult(normalized);
+      }
+    } catch (err) {
+      console.error("generateAdvice error", err);
+      setAiError("Failed to contact AI service.");
+    } finally {
+      setAiLoading(false);
     }
   };
 
@@ -268,7 +363,6 @@ function Savings() {
             ) : (
               <div className="grid sm:grid-cols-2 gap-4">
                 {goals.map(goal => {
-                  // progress relative to saved amount (if saved is logic: use summary.savings)
                   const savedAmount = Math.max(0, summary.savings || 0);
                   const progress = Math.min(100, Math.round((savedAmount / (goal.amount || 1)) * 100));
                   return (
@@ -307,7 +401,7 @@ function Savings() {
           </div>
         </div>
 
-        {/* Right column: income updater + insights */}
+        {/* Right column: income updater + insights + AI advisor */}
         <div className="space-y-6">
           {/* Income updater card */}
           <div className="bg-white rounded-xl p-4 shadow-sm border">
@@ -364,6 +458,118 @@ function Savings() {
                 🔍 Get AI Insights (soon)
               </button>
             </div>
+          </div>
+
+          {/* AI Savings Advisor card */}
+          <div className="bg-white rounded-xl p-4 shadow-sm border">
+            <h4 className="text-lg font-semibold mb-2">🤖 AI Savings Advisor</h4>
+            <p className="text-sm text-gray-500 mb-3">Get a personalized saving plan, SIP suggestion and timeline for your goals.</p>
+
+            {/* Salary and Expenses inputs for advisor */}
+            <div className="space-y-2">
+              <input
+                type="number"
+                placeholder="Monthly salary (₹)"
+                value={advisorInput.salary}
+                onChange={e => setAdvisorInput({ ...advisorInput, salary: e.target.value })}
+                className="border px-3 py-2 rounded w-full"
+              />
+              <input
+                type="number"
+                placeholder="Expected monthly expenses (₹)"
+                value={advisorInput.expenses}
+                onChange={e => setAdvisorInput({ ...advisorInput, expenses: e.target.value })}
+                className="border px-3 py-2 rounded w-full"
+              />
+            </div>
+
+            {/* Goals list for advisor */}
+            <div className="mt-3">
+              <div className="text-sm font-medium mb-2">Goals</div>
+              {advisorInput.goals.length === 0 && <div className="text-xs text-gray-500 mb-2">No goals added yet.</div>}
+              <div className="space-y-2 mb-2">
+                {advisorInput.goals.map((g, idx) => (
+                  <div key={idx} className="flex justify-between items-center bg-gray-50 rounded p-2">
+                    <div className="text-sm">{g.name} — ₹{g.amount}</div>
+                    <button onClick={() => removeAiGoal(idx)} className="text-red-500 text-sm">Remove</button>
+                  </div>
+                ))}
+              </div>
+
+              {/* add goal inline */}
+              <div className="flex gap-2 items-center">
+                <input
+                  type="text"
+                  placeholder="Goal name (Laptop)"
+                  value={aiNewGoal.name}
+                  onChange={e => setAiNewGoal({ ...aiNewGoal, name: e.target.value })}
+                  className="border px-3 py-2 rounded w-1/2"
+                />
+                <input
+                  type="number"
+                  placeholder="Amount"
+                  value={aiNewGoal.amount}
+                  onChange={e => setAiNewGoal({ ...aiNewGoal, amount: e.target.value })}
+                  className="border px-3 py-2 rounded w-1/3"
+                />
+                <button onClick={addAiGoal} className="bg-blue-600 text-white px-3 py-2 rounded">Add</button>
+              </div>
+            </div>
+
+            {/* Generate */}
+            <div className="mt-4">
+              <button
+                onClick={generateAdvice}
+                disabled={aiLoading}
+                className="w-full bg-purple-600 text-white px-4 py-2 rounded hover:bg-purple-700 disabled:opacity-60"
+              >
+                {aiLoading ? "Generating..." : "Generate AI Savings Plan"}
+              </button>
+            </div>
+
+            {/* error */}
+            {aiError && <div className="mt-3 text-sm text-red-600">{aiError}</div>}
+
+            {/* AI Result */}
+            {aiResult && (
+              <div className="mt-4 p-3 rounded-lg bg-purple-50 border border-purple-200 text-sm text-gray-700">
+                <div className="font-medium text-purple-700 mb-2">AI Recommendation</div>
+
+                <div className="mb-2"><strong>Ideal monthly savings:</strong> ₹{aiResult.idealSavings ?? aiResult.monthlySavings ?? "-"}</div>
+                <div className="mb-2"><strong>SIP suggestion:</strong> ₹{aiResult.sipAmount ?? "-"}</div>
+                <div className="mb-2"><strong>Safe to spend:</strong> ₹{aiResult.safeToSpend ?? "-"}</div>
+                <div className="mb-2"><strong>Recommended timeline (months):</strong> {aiResult.recommendedTimelineMonths ?? "-"}</div>
+
+                <div className="mt-2">
+                  <div className="font-medium">Goal timelines</div>
+                  {aiResult.goalTimelineMonths && typeof aiResult.goalTimelineMonths === "object" ? (
+                    <ul className="list-disc list-inside mt-1">
+                      {Object.entries(aiResult.goalTimelineMonths).map(([k, v]) => (
+                        <li key={k}>{k}: {v} months</li>
+                      ))}
+                    </ul>
+                  ) : (
+                    <div className="text-xs text-gray-500">No timeline provided.</div>
+                  )}
+                </div>
+
+                <div className="mt-3">
+                  <div className="font-medium">Monthly Plan</div>
+                  {aiResult.monthlyPlan && aiResult.monthlyPlan.length ? (
+                    <ol className="list-decimal list-inside mt-1">
+                      {aiResult.monthlyPlan.map((s, i) => <li key={i}>{s}</li>)}
+                    </ol>
+                  ) : (
+                    <div className="text-xs text-gray-500 mt-1">No monthly plan provided.</div>
+                  )}
+                </div>
+
+                <div className="mt-3">
+                  <div className="font-medium">AI Raw Output (debug)</div>
+                  <pre className="bg-white p-2 rounded mt-1 text-xs max-h-40 overflow-auto">{aiResult.rawText}</pre>
+                </div>
+              </div>
+            )}
           </div>
         </div>
       </div>

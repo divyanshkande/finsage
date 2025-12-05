@@ -66,7 +66,7 @@ public class ExpenseService {
         return summary;
     }
 	
-	// For category-wise chart (like Pie chart)
+	
 	public Map<String, Double> getCategoryWise(String email) {
 	    List<Expense> expenses = expenseRepo.findByUserEmail(email);
 	    return expenses.stream()

@@ -28,9 +28,9 @@ public class EventService {
 
     private User getCurrentUser(Authentication authentication) {
         String email = authentication.getName();
-        return userRepository.findByEmail(email).orElseThrow();
+        return userRepository.findByEmail(email)
+                .orElseThrow(() -> new RuntimeException("User not found with email: " + email));
     }
-
 
     public Events createEvent(Events event, Authentication auth) {
         User user = getCurrentUser(auth);
@@ -51,9 +51,9 @@ public class EventService {
 
     public Events getEventById(Long id, Authentication authentication) {
         User user = getCurrentUser(authentication);
-        Events event = eventRepository.findById(id).orElseThrow();
+        Events event = eventRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Event not found"));
 
-        // Optional (but recommended): Ensure event belongs to the authenticated user
         if (!event.getUser().getId().equals(user.getId())) {
             throw new RuntimeException("Unauthorized to view this event");
         }
@@ -62,12 +62,21 @@ public class EventService {
     }
 
     public void deleteEvent(Long id, Authentication auth) {
-        eventRepository.deleteById(id); // Optional: validate user ownership
+        User user = getCurrentUser(auth);
+        Events event = eventRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Event not found"));
+
+        if (!event.getUser().getId().equals(user.getId())) {
+            throw new RuntimeException("Unauthorized to delete this event");
+        }
+
+        eventRepository.delete(event);
     }
-    
+
     public Events updateEventCategoryBreakdown(Long eventId, Map<String, Double> newBreakdown, Authentication auth) {
         User user = getCurrentUser(auth);
-        Events event = eventRepository.findById(eventId).orElseThrow(() -> new RuntimeException("Event not found"));
+        Events event = eventRepository.findById(eventId)
+                .orElseThrow(() -> new RuntimeException("Event not found"));
 
         if (!event.getUser().getId().equals(user.getId())) {
             throw new RuntimeException("Unauthorized to update this event");
@@ -77,15 +86,6 @@ public class EventService {
         double totalSpent = newBreakdown.values().stream().mapToDouble(Double::doubleValue).sum();
         event.setTotalSpent(totalSpent);
 
-        return eventRepository.save(event); // ✅ returning updated event
-    }
-
-    public Events updateCategoryBreakdown(Long id, Map<String, Double> breakdown, Authentication auth) {
-        Events event = eventRepository.findById(id).orElseThrow();
-        event.setCategoryBreakdown(breakdown);
-        double totalSpent = breakdown.values().stream().mapToDouble(Double::doubleValue).sum();
-        event.setTotalSpent(totalSpent);
         return eventRepository.save(event);
     }
-
 }

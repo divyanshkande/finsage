@@ -12,7 +12,6 @@ import java.util.List;
 import java.util.Map;
 
 
-
 @RestController
 @RequestMapping("/api/events")
 @CrossOrigin(origins = "http://localhost:3000")
@@ -22,25 +21,29 @@ public class EventController {
     private EventService eventService;
 
     @PostMapping
-    public Events createEvent(@RequestBody Events event, Authentication authentication) {
-        return eventService.createEvent(event, authentication);
+    public ResponseEntity<Events> createEvent(@RequestBody Events event, Authentication authentication) {
+        Events created = eventService.createEvent(event, authentication);
+        return ResponseEntity.ok(created);
     }
 
     @GetMapping
-    public List<Events> getAllEvents(Authentication authentication) {
-        return eventService.getAllEventsForUser(authentication);
+    public ResponseEntity<List<Events>> getAllEvents(Authentication authentication) {
+        List<Events> events = eventService.getAllEventsForUser(authentication);
+        return ResponseEntity.ok(events);
     }
 
     @GetMapping("/{id}")
-    public Events getEvent(@PathVariable Long id, Authentication authentication) {
-        return eventService.getEventById(id, authentication);
+    public ResponseEntity<Events> getEvent(@PathVariable Long id, Authentication authentication) {
+        Events event = eventService.getEventById(id, authentication);
+        return ResponseEntity.ok(event);
     }
 
     @DeleteMapping("/{id}")
-    public void deleteEvent(@PathVariable Long id, Authentication authentication) {
+    public ResponseEntity<Void> deleteEvent(@PathVariable Long id, Authentication authentication) {
         eventService.deleteEvent(id, authentication);
+        return ResponseEntity.noContent().build(); // 204 No Content
     }
-    
+
     @PutMapping("/{id}")
     public ResponseEntity<Events> updateEventCategoryBreakdown(
             @PathVariable Long id,
@@ -49,10 +52,5 @@ public class EventController {
 
         Events updated = eventService.updateEventCategoryBreakdown(id, categoryBreakdown, authentication);
         return ResponseEntity.ok(updated);
-    }
-
-    @PutMapping("/{id}/category")
-    public Events updateCategories(@PathVariable Long id, @RequestBody Map<String, Double> breakdown, Authentication authentication) {
-        return eventService.updateCategoryBreakdown(id, breakdown, authentication);
     }
 }

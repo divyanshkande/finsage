@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useEffect, useState } from "react";
 import {
   BarChart, Bar, XAxis, YAxis, Tooltip,
   PieChart, Pie, Cell, Legend, ResponsiveContainer
@@ -13,21 +13,54 @@ function Dashboard() {
   const { expenses, monthlyData, categoryData, summary, loading, handleDelete } =
     useDashboardData(navigate);
 
+  const [greeting, setGreeting] = useState("");
+
+  useEffect(() => {
+    const hour = new Date().getHours();
+    if (hour < 12) setGreeting("Good Morning 🌅");
+    else if (hour < 17) setGreeting("Good Afternoon ☀️");
+    else setGreeting("Good Evening 🌙");
+  }, []);
+
   if (loading) {
     return <div className="p-10 text-center text-lg text-gray-700">🔄 Loading your dashboard...</div>;
   }
 
+  // Get last expense
+  const lastExpense = expenses.length > 0 ? expenses[expenses.length - 1] : null;
+
   return (
     <div className="min-h-screen bg-gray-100 p-4 sm:p-6 space-y-6">
-      {/* Header */}
-      <div className="flex flex-col sm:flex-row justify-between items-center mb-4">
-        <h1 className="text-2xl sm:text-3xl font-bold text-gray-800">Dashboard</h1>
-        <div className="flex flex-wrap justify-center sm:justify-end gap-2 mt-4 sm:mt-0">
-          <button onClick={() => navigate("/savings")} className="btn bg-blue-500">Savings</button>
-          <button onClick={() => navigate("/events")} className="btn bg-green-500">Events</button>
-          <button onClick={() => navigate("/expenses")} className="btn bg-purple-500">Expenses</button>
-        </div>
+
+      {/* Greeting Header */}
+      <div className="bg-gradient-to-r from-blue-500 to-indigo-600 text-white p-6 rounded-lg shadow">
+        <h2 className="text-2xl sm:text-3xl font-semibold">
+          {greeting}, Divyansh 👋
+        </h2>
+        <p className="text-sm sm:text-base opacity-90 mt-1">
+          Here's your financial summary
+        </p>
       </div>
+
+      {/* Navigation Buttons */}
+      <div className="flex flex-wrap justify-center sm:justify-end gap-2">
+        <button onClick={() => navigate("/savings")} className="btn bg-blue-500">Savings</button>
+        <button onClick={() => navigate("/events")} className="btn bg-green-500">Events</button>
+        <button onClick={() => navigate("/expenses")} className="btn bg-purple-500">Expenses</button>
+      </div>
+
+      {/* Last Expense Card */}
+      {lastExpense && (
+        <div className="bg-white p-4 rounded shadow flex items-center justify-between border-l-4 border-indigo-500">
+          <div>
+            <h3 className="text-lg font-semibold">🧾 Last Recorded Expense</h3>
+            <p className="text-gray-600">Title: {lastExpense.title}</p>
+            <p className="text-gray-600">Category: {lastExpense.category}</p>
+            <p className="text-gray-800 font-bold text-lg">₹{lastExpense.amount}</p>
+          </div>
+          <p className="text-sm text-gray-500">{lastExpense.date}</p>
+        </div>
+      )}
 
       {/* Summary Cards */}
       {summary && (
@@ -68,7 +101,7 @@ function Dashboard() {
 
       {/* Expenses Table */}
       <div className="overflow-x-auto">
-        <h3 className="text-lg sm:text-xl font-semibold mb-2 mt-4">🧾 Expenses</h3>
+        <h3 className="text-lg sm:text-xl font-semibold mb-2 mt-4">🧾 Expenses List</h3>
         <table className="min-w-full bg-white border shadow rounded text-sm sm:text-base">
           <thead className="bg-gray-100">
             <tr>

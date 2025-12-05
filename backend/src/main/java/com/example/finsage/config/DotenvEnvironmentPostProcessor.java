@@ -47,6 +47,12 @@ public class DotenvEnvironmentPostProcessor implements EnvironmentPostProcessor 
             envProps.put("spring.mail.password", dotenv.get("SPRING_MAIL_PASSWORD"));
         }
 
+        if (dotenv.get("OPENROUTER_KEY") != null) {
+            envProps.put("openrouter.key", dotenv.get("OPENROUTER_KEY"));
+        }
+        
+        
+
         environment.getPropertySources().addFirst(new MapPropertySource("dotenv", envProps));
     }
 }

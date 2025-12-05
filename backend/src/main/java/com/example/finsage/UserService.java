@@ -79,21 +79,24 @@ public class UserService {
         mailSender.send(message);
     }
 
-    public void resetPassword(String token, String newPassword) {
-        PasswordResetToken tokenObj = tokenRepo.findByToken(token)
-            .orElseThrow(() -> new RuntimeException("Invalid token"));
+   public void resetPassword(String token, String newPassword) {
+    PasswordResetToken tokenObj = tokenRepo.findByToken(token)
+        .orElseThrow(() -> new RuntimeException("Invalid token"));
 
-        if (tokenObj.getExpiryDate().isBefore(LocalDateTime.now())) {
-            throw new RuntimeException("Token expired");
-        }
-
-        User user = repo.findByEmail(tokenObj.getEmail())
-            .orElseThrow(() -> new RuntimeException("User not found"));
-
-        user.setPassword(newPassword); // 🔐 Use BCrypt encoder here ideally
-        repo.save(user);
-
-        tokenRepo.delete(tokenObj);
+    if (tokenObj.getExpiryDate().isBefore(LocalDateTime.now())) {
+        throw new RuntimeException("Token expired");
     }
+
+    User user = repo.findByEmail(tokenObj.getEmail())
+        .orElseThrow(() -> new RuntimeException("User not found"));
+
+   
+    user.setPassword(encoder.encode(newPassword));
+    repo.save(user);
+
+   
+    tokenRepo.delete(tokenObj);
+}
+
 
 }

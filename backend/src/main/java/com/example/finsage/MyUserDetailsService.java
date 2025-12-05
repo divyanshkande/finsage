@@ -19,13 +19,13 @@ public class MyUserDetailsService implements UserDetailsService {
 
     @Override
     public UserDetails loadUserByUsername(String email) throws UsernameNotFoundException {
-        Optional<User> userOptional = repo.findByEmail(email); // Using email for login
+        Optional<User> userOptional = repo.findByEmail(email); 
 
         User user = userOptional.orElseThrow(() -> 
             new UsernameNotFoundException("User not found with email: " + email)
         );
 
-        // ✅ Attach ROLE_<role> authority
+       
         return new org.springframework.security.core.userdetails.User(
                 user.getEmail(),
                 user.getPassword(),

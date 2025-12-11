@@ -41,7 +41,8 @@ public class SecurityConfig {
                                 "/api/auth/register",
                                 "/api/auth/login",
                                 "/api/auth/forgot-password",
-                                "/api/auth/reset-password"
+                                "/api/auth/reset-password",
+                                "/api/ocr/**" 
                         ).permitAll()  // 🔓 Only auth endpoints allowed without login
                         .requestMatchers("/api/events/**").authenticated() // 🔐 Events protected
                         .anyRequest().authenticated()  // 🔐 All else requires login

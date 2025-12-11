@@ -10,49 +10,44 @@ import java.util.HashMap;
 import java.util.Map;
 
 public class DotenvEnvironmentPostProcessor implements EnvironmentPostProcessor {
+
     @Override
     public void postProcessEnvironment(ConfigurableEnvironment environment, SpringApplication application) {
-        Dotenv dotenv = Dotenv.configure().ignoreIfMissing().load();
+        Dotenv dotenv = Dotenv.configure()
+                .directory(System.getProperty("user.dir"))
+                .ignoreIfMissing()
+                .load();
 
         Map<String, Object> envProps = new HashMap<>();
-        dotenv.entries().forEach(entry -> envProps.put(entry.getKey(), entry.getValue()));
 
-        // Database
-        if (dotenv.get("DB_USERNAME") != null) {
-            envProps.put("spring.datasource.username", dotenv.get("DB_USERNAME"));
-        }
-        if (dotenv.get("DB_PASSWORD") != null) {
-            envProps.put("spring.datasource.password", dotenv.get("DB_PASSWORD"));
-        }
-        if (dotenv.get("DB_URL") != null) {
-            envProps.put("spring.datasource.url", dotenv.get("DB_URL"));
-        }
+        // Keep all your existing Spring property mappings
+        dotenv.entries().forEach(entry -> {
+            String key = entry.getKey();
+            String value = entry.getValue();
+            if (value != null) {
+                // For Spring Boot properties
+                switch (key) {
+                    case "DB_USERNAME" -> envProps.put("spring.datasource.username", value);
+                    case "DB_PASSWORD" -> envProps.put("spring.datasource.password", value);
+                    case "DB_URL" -> envProps.put("spring.datasource.url", value);
+                    case "JWT_SECRET" -> envProps.put("jwt.secret", value);
+                    case "SPRING_MAIL_HOST" -> envProps.put("spring.mail.host", value);
+                    case "SPRING_MAIL_PORT" -> envProps.put("spring.mail.port", value);
+                    case "SPRING_MAIL_USERNAME" -> envProps.put("spring.mail.username", value);
+                    case "SPRING_MAIL_PASSWORD" -> envProps.put("spring.mail.password", value);
+                    case "OPENROUTER_KEY" -> envProps.put("openrouter.key", value);
+                }
+            }
+        });
 
-        // JWT Secret
-        if (dotenv.get("JWT_SECRET") != null) {
-            envProps.put("jwt.secret", dotenv.get("JWT_SECRET"));
-        }
-
-        // Spring Mail
-        if (dotenv.get("SPRING_MAIL_HOST") != null) {
-            envProps.put("spring.mail.host", dotenv.get("SPRING_MAIL_HOST"));
-        }
-        if (dotenv.get("SPRING_MAIL_PORT") != null) {
-            envProps.put("spring.mail.port", dotenv.get("SPRING_MAIL_PORT"));
-        }
-        if (dotenv.get("SPRING_MAIL_USERNAME") != null) {
-            envProps.put("spring.mail.username", dotenv.get("SPRING_MAIL_USERNAME"));
-        }
-        if (dotenv.get("SPRING_MAIL_PASSWORD") != null) {
-            envProps.put("spring.mail.password", dotenv.get("SPRING_MAIL_PASSWORD"));
+        // THIS LINE FIXES TESSERACT FOREVER
+        String tessPath = dotenv.get("TESSDATA_PATH");
+        if (tessPath != null && !tessPath.trim().isEmpty()) {
+            System.setProperty("tesseract.datapath", tessPath.trim());
+            System.out.println("TESSERACT DATAPATH SET TO: " + tessPath.trim());
         }
 
-        if (dotenv.get("OPENROUTER_KEY") != null) {
-            envProps.put("openrouter.key", dotenv.get("OPENROUTER_KEY"));
-        }
-        
-        
-
+        // Add to Spring environment (for other properties)
         environment.getPropertySources().addFirst(new MapPropertySource("dotenv", envProps));
     }
 }

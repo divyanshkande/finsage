@@ -28,7 +28,8 @@ public class UserService {
     private JWTService jwtservice;
     
     @Autowired private TokenRepository tokenRepo;
-    @Autowired private JavaMailSender mailSender;
+    @Autowired(required = false)
+    private JavaMailSender mailSender;
 
 
     private BCryptPasswordEncoder encoder = new BCryptPasswordEncoder(12);
@@ -66,17 +67,24 @@ public class UserService {
         resetToken.setToken(token);
         resetToken.setEmail(email);
         resetToken.setExpiryDate(LocalDateTime.now().plusMinutes(30));
-
         tokenRepo.save(resetToken);
 
         String resetLink = "http://localhost:3000/reset-password/" + token;
 
-        SimpleMailMessage message = new SimpleMailMessage();
-        message.setTo(email);
-        message.setSubject("Reset your password");
-        message.setText("Click this link to reset your password: " + resetLink);
-
-        mailSender.send(message);
+        // Safe email sending
+        if (mailSender != null) {
+            SimpleMailMessage message = new SimpleMailMessage();
+            message.setTo(email);
+            message.setSubject("Reset your password");
+            message.setText("Click this link to reset your password: " + resetLink + "\n\nLink expires in 30 minutes.");
+            mailSender.send(message);
+            System.out.println("Password reset email sent to: " + email);
+        } else {
+            // This is GOLD for local development
+            System.out.println("MAIL SENDER NOT CONFIGURED – BUT HERE'S YOUR RESET LINK:");
+            System.out.println(resetLink);
+            System.out.println("(Copy-paste this into browser since email is disabled)");
+        }
     }
 
    public void resetPassword(String token, String newPassword) {

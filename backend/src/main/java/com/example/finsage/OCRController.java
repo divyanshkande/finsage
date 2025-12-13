@@ -1,7 +1,5 @@
 package com.example.finsage;
 
-import com.example.finsage.ExpenseService;
-import com.example.finsage.UserRepository;
 import com.example.finsage.model.Expense;
 import com.example.finsage.User;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -14,7 +12,10 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.time.LocalDate;
+import java.time.format.DateTimeFormatter;
 import java.util.Map;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 @RestController
 @RequestMapping("/api/ocr")
@@ -26,7 +27,6 @@ public class OCRController {
     @Autowired private ExpenseService expenseService;
     @Autowired private UserRepository userRepo;
 
-    // Change this to any folder you want (absolute path recommended)
     @Value("${app.upload.dir:${user.dir}/uploads}")
     private String uploadDir;
 
@@ -35,26 +35,19 @@ public class OCRController {
             @RequestParam("file") MultipartFile file,
             @RequestParam("email") String email) throws Exception {
 
-        // THIS IS THE ONLY PART THAT MATTERS — THE REST CAN STAY THE SAME
+        // Ensure upload directory exists
         Path uploadPath = Paths.get(uploadDir);
-
-        // Create the directory if it doesn't exist (and all parent dirs)
-        if (!Files.exists(uploadPath)) {
-            Files.createDirectories(uploadPath);  // ← this fixes the Tomcat temp folder bug forever
-        }
+        if (!Files.exists(uploadPath)) Files.createDirectories(uploadPath);
 
         String originalName = System.currentTimeMillis() + "_" + file.getOriginalFilename();
         Path filePath = uploadPath.resolve(originalName);
-
-        // This writes directly to your folder → bypasses Tomcat's broken temp folder
         file.transferTo(filePath.toFile());
-        // END OF FIX
 
-        // Rest of your perfect code (unchanged)
+        // OCR pipeline
         String processedPath = preprocessor.preprocess(filePath.toString());
-
         String rawText = ocrService.extractText(processedPath);
 
+        // AI parsing
         Map<String, Object> parsed = aiParser.parseTextToExpense(rawText);
 
         User user = userRepo.findByEmail(email)
@@ -63,41 +56,93 @@ public class OCRController {
         Expense expense = new Expense();
         expense.setUser(user);
 
-        Object merchant = parsed.get("merchant");
-        expense.setTitle(merchant == null ? "Expense" : merchant.toString());
+        // TITLE / MERCHANT
+        String title = parsed.getOrDefault("title", "").toString();
+        if (title.isBlank()) {
+            String[] lines = rawText.split("\\R");
+            title = lines.length > 0 ? lines[0].trim() : "OCR Expense";
+        }
+        title = title.replaceAll("^\\d+\\s*", "");
+        expense.setTitle(title);
 
-        Object amountObj = parsed.get("amount");
+        // DESCRIPTION
+        expense.setDescription(parsed.getOrDefault("description", "Expense").toString());
+
+        // AMOUNT
         double amount = 0.0;
-        if (amountObj instanceof Number) {
-            amount = ((Number) amountObj).doubleValue();
-        } else if (amountObj != null) {
+        Object amountObj = parsed.get("amount");
+        if (amountObj instanceof Number) amount = ((Number) amountObj).doubleValue();
+        else if (amountObj != null) {
             try { amount = Double.parseDouble(amountObj.toString()); } catch (Exception ignored) {}
         }
         expense.setAmount(amount);
 
-        Object dateObj = parsed.get("date");
-        if (dateObj instanceof LocalDate) {
-            expense.setDate((LocalDate) dateObj);
-        } else if (dateObj != null) {
-            try {
-                expense.setDate(LocalDate.parse(dateObj.toString()));
-            } catch (Exception ex) {
-                expense.setDate(LocalDate.now());
-            }
-        } else {
-            expense.setDate(LocalDate.now());
-        }
+        // DATE (AI preferred, OCR fallback)
+        String extractedDate = parsed.getOrDefault("date", "").toString();
+        if (extractedDate.isBlank()) extractedDate = extractDateFromText(rawText);
+        expense.setDate(parseDateSmart(extractedDate));
 
-        Object cat = parsed.get("category");
-        expense.setCategory(cat == null ? "Other" : cat.toString());
+        // CATEGORY (AI preferred, keyword fallback)
+        String category = parsed.getOrDefault("category", "").toString();
+        if (category.isBlank()) category = classifyCategory(rawText);
+        expense.setCategory(category);
 
+        // SAVE
         expenseService.addExpense(expense);
 
+        // RESPONSE
         parsed.put("saved", true);
         parsed.put("rawText", rawText);
         parsed.put("processedImage", processedPath);
         parsed.put("originalImage", filePath.toString());
+        parsed.put("finalTitle", title);
+        parsed.put("finalCategory", category);
+        parsed.put("finalDate", expense.getDate());
+        parsed.put("merchant", title);
 
         return parsed;
+    }
+
+    // ======= HELPERS =======
+
+    private LocalDate parseDateSmart(String dateStr) {
+        if (dateStr == null || dateStr.isBlank()) return LocalDate.now();
+
+        try { return LocalDate.parse(dateStr); } catch (Exception ignored) {}
+        try {
+            DateTimeFormatter formatter = DateTimeFormatter.ofPattern("M/d/yyyy");
+            return LocalDate.parse(dateStr, formatter);
+        } catch (Exception ignored) {}
+        return LocalDate.now();
+    }
+
+    private String extractDateFromText(String text) {
+        if (text == null) return null;
+        Pattern pattern = Pattern.compile("(\\d{1,2}/\\d{1,2}/\\d{4})");
+        Matcher matcher = pattern.matcher(text);
+        return matcher.find() ? matcher.group(1) : null;
+    }
+
+    private String classifyCategory(String text) {
+        if (text == null) return "Other";
+        String t = text.toLowerCase();
+
+        if (t.contains("restaurant") || t.contains("cafe") || t.contains("bar")
+                || t.contains("noodles") || t.contains("pizza") || t.contains("dine")) return "Food";
+
+        if (t.contains("uber") || t.contains("ola") || t.contains("flight")
+                || t.contains("train") || t.contains("bus") || t.contains("petrol") || t.contains("fuel")) return "Travel";
+
+        if (t.contains("amazon") || t.contains("flipkart") || t.contains("mall")
+                || t.contains("store") || t.contains("invoice") || t.contains("qty")) return "Shopping";
+
+        if (t.contains("electricity") || t.contains("water") || t.contains("broadband")
+                || t.contains("recharge")) return "Utilities";
+
+        if (t.contains("hospital") || t.contains("pharmacy") || t.contains("doctor")) return "Medical";
+
+        if (t.contains("movie") || t.contains("cinema") || t.contains("ticket")) return "Entertainment";
+
+        return "Other";
     }
 }

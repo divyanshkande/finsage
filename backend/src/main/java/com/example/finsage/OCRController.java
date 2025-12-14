@@ -5,6 +5,7 @@ import com.example.finsage.User;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.MediaType;
+import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -19,6 +20,10 @@ import java.util.regex.Pattern;
 
 @RestController
 @RequestMapping("/api/ocr")
+@CrossOrigin(
+        origins = "http://localhost:3000",
+        allowCredentials = "true"
+)
 public class OCRController {
 
     @Autowired private ImagePreprocessor preprocessor;
@@ -33,7 +38,14 @@ public class OCRController {
     @PostMapping(value = "/upload", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public Map<String, Object> uploadAndParse(
             @RequestParam("file") MultipartFile file,
-            @RequestParam("email") String email) throws Exception {
+            Authentication authentication   // ✅ FROM JWT
+    ) throws Exception {
+
+        // ✅ Extract email securely from JWT
+        String email = authentication.getName();
+
+        User user = userRepo.findByEmail(email)
+                .orElseThrow(() -> new RuntimeException("User not found"));
 
         // Ensure upload directory exists
         Path uploadPath = Paths.get(uploadDir);
@@ -49,9 +61,6 @@ public class OCRController {
 
         // AI parsing
         Map<String, Object> parsed = aiParser.parseTextToExpense(rawText);
-
-        User user = userRepo.findByEmail(email)
-                .orElseThrow(() -> new RuntimeException("User not found"));
 
         Expense expense = new Expense();
         expense.setUser(user);
@@ -77,21 +86,21 @@ public class OCRController {
         }
         expense.setAmount(amount);
 
-        // DATE (AI preferred, OCR fallback)
+        // DATE (AI preferred → OCR → fallback today)
         String extractedDate = parsed.getOrDefault("date", "").toString();
         if (extractedDate.isBlank()) extractedDate = extractDateFromText(rawText);
         expense.setDate(parseDateSmart(extractedDate));
 
-        // CATEGORY (AI preferred, keyword fallback)
+        // CATEGORY (AI preferred → keyword fallback)
         String category = parsed.getOrDefault("category", "").toString();
         if (category.isBlank()) category = classifyCategory(rawText);
         expense.setCategory(category);
 
         // SAVE
-        expenseService.addExpense(expense);
-
-        // RESPONSE
-        parsed.put("saved", true);
+//        expenseService.addExpense(expense);
+//
+//        // RESPONSE (frontend editable)
+//        parsed.put("saved", true);
         parsed.put("rawText", rawText);
         parsed.put("processedImage", processedPath);
         parsed.put("originalImage", filePath.toString());
@@ -109,10 +118,12 @@ public class OCRController {
         if (dateStr == null || dateStr.isBlank()) return LocalDate.now();
 
         try { return LocalDate.parse(dateStr); } catch (Exception ignored) {}
+
         try {
             DateTimeFormatter formatter = DateTimeFormatter.ofPattern("M/d/yyyy");
             return LocalDate.parse(dateStr, formatter);
         } catch (Exception ignored) {}
+
         return LocalDate.now();
     }
 

@@ -44,48 +44,52 @@ export default function LandingPage() {
           </FadeInText>
         </div>
       </div>
+{/* ABOUT SECTION - High Visibility Text over Wooden Background */}
+<div
+  ref={aboutRef}
+  className="relative min-h-screen bg-cover bg-center py-20 px-6 overflow-hidden"
+  style={{ backgroundImage: `url('/about-bg.jpg')` }} // Your wooden table + charts image
+>
+  {/* Slightly stronger warm overlay for better contrast */}
+  <div className="absolute inset-0 bg-amber-900/15" aria-hidden="true" />
 
-      {/* ABOUT SECTION */}
-      <div
-        ref={aboutRef}
-        className="relative w-full min-h-screen bg-cover bg-center py-20 px-4"
-        style={{ backgroundImage: `url('/about-bg.jpg')` }}
-      >
-        <div className="absolute inset-0 bg-white bg-opacity-90 z-0" />
-        <div className="z-10 relative max-w-6xl mx-auto text-center">
-          <FadeInText delay={0.2} className="text-4xl md:text-5xl font-bold text-gray-900 mb-4 tracking-tight">
-            About Finsage
-          </FadeInText>
+  <div className="relative z-10 max-w-5xl mx-auto">
+    <div className="text-center mb-16">
+      <FadeInText delay={0.2} className="text-4xl md:text-5xl font-bold text-gray-900 mb-6 drop-shadow-xl">
+        About Finsage
+      </FadeInText>
+      <FadeInText delay={0.3} className="text-lg md:text-xl text-gray-900 max-w-3xl mx-auto leading-relaxed drop-shadow-lg font-medium">
+        Finsage is your smart personal finance companion, helping you manage money easily. Whether you're saving for goals, tracking expenses, or staying on budget — we bring simplicity and intelligence together.
+      </FadeInText>
+    </div>
 
-          <FadeInText delay={0.3} className="text-base md:text-lg text-gray-700 max-w-3xl mx-auto mb-10 leading-relaxed">
-            Finsage is your smart personal finance companion, helping you manage money easily. Whether you're saving for goals, tracking expenses, or just trying to stay on budget — Finsage brings simplicity and intelligence together.
-          </FadeInText>
-
-          <div className="grid md:grid-cols-2 gap-12 text-left mt-6">
-            <div>
-              <FadeInText delay={0.4} className="text-2xl font-semibold text-blue-700 mb-4">
-                💡 Why Finsage?
-              </FadeInText>
-              <ul className="space-y-3 text-gray-700 text-base leading-relaxed list-disc list-inside">
-                <li>📊 Real-time dashboard with income and expense visualization.</li>
-                <li>🎯 Goal tracking for personalized targets.</li>
-                <li>📅 Smart auto-categorized transactions.</li>
-                <li>🔐 Secure, token-based login and sessions.</li>
-                <li>📈 AI-generated reports and monthly insights.</li>
-              </ul>
-            </div>
-
-            <div>
-              <FadeInText delay={0.5} className="text-2xl font-semibold text-blue-700 mb-4">
-                🌍 Our Vision
-              </FadeInText>
-              <p className="text-gray-700 text-base leading-relaxed">
-                At Finsage, we believe financial wellness should be accessible to everyone. We're building a future where managing money feels less like a chore — and more like a path to success, security, and confidence.
-              </p>
-            </div>
-          </div>
-        </div>
+    <div className="grid md:grid-cols-2 gap-8">
+      {/* Why Finsage */}
+      <div className="bg-white/90 backdrop-blur-sm rounded-2xl p-8 shadow-2xl border border-gray-200">
+        <FadeInText delay={0.4} className="text-2xl font-bold text-blue-800 mb-6 flex items-center justify-center gap-2 drop-shadow-md">
+          <span className="text-3xl">💡</span> Why Finsage?
+        </FadeInText>
+        <ul className="space-y-3 text-gray-800 text-base md:text-lg font-medium">
+          <li className="flex gap-3"><span className="text-xl">📊</span> Real-time dashboard with clear visualizations</li>
+          <li className="flex gap-3"><span className="text-xl">🎯</span> Personalized goal tracking</li>
+          <li className="flex gap-3"><span className="text-xl">📅</span> Smart auto-categorized transactions</li>
+          <li className="flex gap-3"><span className="text-xl">🔐</span> Secure token-based authentication</li>
+          <li className="flex gap-3"><span className="text-xl">📈</span> AI savings plans + OCR bill extraction</li>
+        </ul>
       </div>
+
+      {/* Our Vision */}
+      <div className="bg-white/90 backdrop-blur-sm rounded-2xl p-8 shadow-2xl border border-gray-200">
+        <FadeInText delay={0.5} className="text-2xl font-bold text-blue-800 mb-6 flex items-center justify-center gap-2 drop-shadow-md">
+          <span className="text-3xl">🌍</span> Our Vision
+        </FadeInText>
+        <p className="text-gray-800 text-base md:text-lg leading-relaxed font-medium">
+          At Finsage, we believe financial wellness should be accessible to everyone. We're building a future where managing money feels empowering — turning numbers into confidence, security, and real progress.
+        </p>
+      </div>
+    </div>
+  </div>
+</div>
 
       {/* LOGIN SECTION */}
       <div ref={loginRef}>

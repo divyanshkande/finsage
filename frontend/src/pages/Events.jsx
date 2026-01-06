@@ -9,9 +9,9 @@ const COLORS = ['#6366F1', '#10B981', '#F59E0B', '#EF4444', '#3B82F6'];
 
 function Events() {
   const [events, setEvents] = useState([]);
-  const [editIndex, setEditIndex] = useState(null);
+  const [editId, setEditId] = useState(null); // Use event ID instead of index
   const [editCategories, setEditCategories] = useState([]);
-  const token = localStorage.getItem("token");
+  
   const navigate = useNavigate();
 
   const [formData, setFormData] = useState({
@@ -22,14 +22,23 @@ function Events() {
   });
 
   const fetchEvents = async () => {
-    const res = await fetch("http://localhost:8080/api/events", {
-      headers: { Authorization: `Bearer ${token}` },
-      credentials: 'include'
-    });
+    try {
+      const res = await fetch("http://localhost:8080/api/events", {
+        credentials: 'include'
+      });
 
-    const data = await res.json();
-    const sorted = data.sort((a, b) => new Date(b.date) - new Date(a.date));
-    setEvents(sorted);
+      if (!res.ok) {
+        throw new Error('Failed to fetch events');
+      }
+
+      const data = await res.json();
+      const sorted = data.sort((a, b) => new Date(b.date) - new Date(a.date));
+      setEvents(sorted);
+    } catch (err) {
+      console.error("Error fetching events:", err);
+      // You can add a toast notification here if you have one
+      alert("Failed to load events. Please try again.");
+    }
   };
 
   useEffect(() => {
@@ -54,8 +63,9 @@ function Events() {
 
     const breakdown = {};
     formData.categories.forEach(cat => {
-      if (cat.name && cat.amount)
+      if (cat.name && cat.amount && !isNaN(cat.amount)) {
         breakdown[cat.name] = parseFloat(cat.amount);
+      }
     });
 
     const payload = {
@@ -65,42 +75,59 @@ function Events() {
       categoryBreakdown: breakdown
     };
 
-    await fetch("http://localhost:8080/api/events", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${token}`
-      },
-      credentials: "include",
-      body: JSON.stringify(payload)
-    });
+    try {
+      const res = await fetch("http://localhost:8080/api/events", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json"
+        },
+        credentials: "include",
+        body: JSON.stringify(payload)
+      });
 
-    fetchEvents();
-    setFormData({
-      title: '',
-      date: '',
-      totalBudget: '',
-      categories: [{ name: '', amount: '' }]
-    });
+      if (!res.ok) throw new Error('Failed to create event');
+
+      await fetchEvents(); // Refresh list
+
+      setFormData({
+        title: '',
+        date: '',
+        totalBudget: '',
+        categories: [{ name: '', amount: '' }]
+      });
+    } catch (err) {
+      console.error(err);
+      alert("Failed to save event.");
+    }
   };
 
   const handleDeleteEvent = async (id) => {
-    await fetch(`http://localhost:8080/api/events/${id}`, {
-      method: "DELETE",
-      headers: { Authorization: `Bearer ${token}` },
-      credentials: "include"
-    });
+    if (!window.confirm("Are you sure you want to delete this event?")) return;
 
-    setEvents(events.filter(ev => ev.id !== id));
+    try {
+      const res = await fetch(`http://localhost:8080/api/events/${id}`, {
+        method: "DELETE",
+        credentials: "include"
+      });
+
+      if (!res.ok) throw new Error('Delete failed');
+
+      setEvents(events.filter(ev => ev.id !== id));
+    } catch (err) {
+      console.error(err);
+      alert("Failed to delete event.");
+    }
   };
 
-  const handleEditCategory = (eventIndex) => {
-    const currentEvent = events[eventIndex];
-    const categoryList = Object.entries(currentEvent.categoryBreakdown).map(
-      ([name, amount]) => ({ name, amount })
+  const handleEditCategory = (eventId) => {
+    const currentEvent = events.find(ev => ev.id === eventId);
+    if (!currentEvent) return;
+
+    const categoryList = Object.entries(currentEvent.categoryBreakdown || {}).map(
+      ([name, amount]) => ({ name, amount: amount.toString() })
     );
 
-    setEditIndex(eventIndex);
+    setEditId(eventId);
     setEditCategories(categoryList);
   };
 
@@ -117,31 +144,42 @@ function Events() {
   const saveUpdatedEvent = async (eventId) => {
     const breakdown = {};
     editCategories.forEach(c => {
-      if (c.name && c.amount)
+      if (c.name && c.amount && !isNaN(c.amount)) {
         breakdown[c.name] = parseFloat(c.amount);
+      }
     });
 
-    const res = await fetch(`http://localhost:8080/api/events/${eventId}`, {
-      method: "PUT",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${token}`
-      },
-      credentials: "include",
-      body: JSON.stringify(breakdown)
-    });
+    try {
+      const res = await fetch(`http://localhost:8080/api/events/${eventId}`, {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json"
+        },
+        credentials: "include",
+        body: JSON.stringify({ categoryBreakdown: breakdown })
+      });
 
-    const updatedEvent = await res.json();
+      if (!res.ok) throw new Error('Update failed');
 
-    updatedEvent.totalSpent = Object.values(updatedEvent.categoryBreakdown)
-      .reduce((sum, val) => sum + val, 0);
+      const updatedEvent = await res.json();
 
-    const updatedEvents = events.map(ev =>
-      ev.id === eventId ? updatedEvent : ev
-    );
+      // Recalculate total spent
+      const totalSpent = Object.values(updatedEvent.categoryBreakdown || {})
+        .reduce((sum, val) => sum + (typeof val === 'number' ? val : 0), 0);
 
-    setEvents(updatedEvents);
-    setEditIndex(null);
+      const updatedEvents = events.map(ev =>
+        ev.id === eventId
+          ? { ...updatedEvent, totalSpent }
+          : ev
+      );
+
+      setEvents(updatedEvents);
+      setEditId(null);
+      setEditCategories([]);
+    } catch (err) {
+      console.error(err);
+      alert("Failed to update event.");
+    }
   };
 
   return (
@@ -166,7 +204,7 @@ function Events() {
           placeholder="Event Title"
           value={formData.title}
           onChange={e => setFormData({ ...formData, title: e.target.value })}
-          className="input"
+          className="w-full px-4 py-3 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500"
         />
 
         <input
@@ -174,7 +212,7 @@ function Events() {
           required
           value={formData.date}
           onChange={e => setFormData({ ...formData, date: e.target.value })}
-          className="input"
+          className="w-full px-4 py-3 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500"
         />
 
         <input
@@ -183,7 +221,7 @@ function Events() {
           placeholder="Total Budget"
           value={formData.totalBudget}
           onChange={e => setFormData({ ...formData, totalBudget: e.target.value })}
-          className="input"
+          className="w-full px-4 py-3 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500"
         />
 
         <h4 className="font-semibold text-gray-700">📊 Category Breakdown</h4>
@@ -192,10 +230,10 @@ function Events() {
           <div key={i} className="grid sm:grid-cols-2 gap-2">
             <input
               type="text"
-              placeholder="Category"
+              placeholder="Category (e.g. Food)"
               value={cat.name}
               onChange={e => handleChange(i, 'name', e.target.value)}
-              className="input"
+              className="px-4 py-3 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500"
             />
 
             <input
@@ -203,7 +241,7 @@ function Events() {
               placeholder="Amount"
               value={cat.amount}
               onChange={e => handleChange(i, 'amount', e.target.value)}
-              className="input"
+              className="px-4 py-3 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500"
             />
           </div>
         ))}
@@ -211,159 +249,173 @@ function Events() {
         <button
           type="button"
           onClick={addCategory}
-          className="text-sm text-blue-600"
+          className="text-sm text-blue-600 hover:underline"
         >
-          + Add Category
+          + Add Another Category
         </button>
 
-        <button
-          type="submit"
-          className="bg-green-600 text-white px-6 py-2 rounded-lg shadow hover:bg-green-700"
-        >
-          ✅ Save Event
-        </button>
+        <div className="pt-4">
+          <button
+            type="submit"
+            className="bg-green-600 text-white px-8 py-3 rounded-lg shadow hover:bg-green-700 transition"
+          >
+            ✅ Save Event
+          </button>
+        </div>
       </form>
 
-      <h2 className="text-2xl font-bold mb-4">📋 Your Events</h2>
+      <h2 className="text-2xl font-bold mb-6 text-gray-800">📋 Your Events</h2>
 
       {/* EVENTS GRID */}
-      <div className="grid md:grid-cols-2 gap-6">
-        {events.map((ev, idx) => {
-          const data = Object.entries(ev.categoryBreakdown).map(([name, value]) => ({ name, value }));
-          const totalSpent = data.reduce((sum, d) => sum + d.value, 0);
+      {events.length === 0 ? (
+        <p className="text-gray-600 text-center">No events yet. Create one above!</p>
+      ) : (
+        <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+          {events.map((ev) => {
+            const data = Object.entries(ev.categoryBreakdown || {}).map(([name, value]) => ({
+              name,
+              value: typeof value === 'number' ? value : 0
+            }));
+            const totalSpent = data.reduce((sum, d) => sum + d.value, 0);
+            const saved = ev.totalBudget - totalSpent;
+            const percentage = ev.totalBudget > 0 ? (totalSpent / ev.totalBudget) * 100 : 0;
 
-          const saved = ev.totalBudget - totalSpent;
-          const percentage = Math.min((totalSpent / ev.totalBudget) * 100, 100);
-
-          return (
-            <div
-              key={idx}
-              className="rounded-2xl bg-white/70 backdrop-blur-xl shadow-lg border border-white/40 p-5 transition-all hover:shadow-2xl hover:scale-[1.02]"
-            >
-              <h3 className="text-xl font-semibold text-gray-800">
-                {ev.title}
-              </h3>
-
-              <p className="text-sm text-gray-500 mt-1">📅 {ev.date}</p>
-
-              <div className="mt-3 text-sm text-gray-700 space-y-1">
-                <p>💰 Total Budget: ₹{ev.totalBudget}</p>
-                <p>🧾 Spent: ₹{totalSpent}</p>
-              </div>
-
-              {/* PROGRESS BAR */}
-              <div className="w-full bg-gray-300 rounded-full h-3 mt-3">
-                <div
-                  className={`h-3 rounded-full ${percentage < 80 ? 'bg-green-500' : 'bg-red-500'}`}
-                  style={{ width: `${percentage}%` }}
-                ></div>
-              </div>
-
-              <p
-                className={`mt-2 font-bold ${
-                  saved >= 0 ? 'text-green-600' : 'text-red-600'
-                }`}
+            return (
+              <div
+                key={ev.id}
+                className="rounded-2xl bg-white/70 backdrop-blur-xl shadow-lg border border-white/40 p-6 transition-all hover:shadow-2xl hover:scale-[1.02]"
               >
-                {saved >= 0
-                  ? `🎉 Saved ₹${saved}`
-                  : `⚠️ Overspent ₹${-saved}`}
-              </p>
+                <h3 className="text-xl font-semibold text-gray-800">
+                  {ev.title}
+                </h3>
 
-              {/* EDIT MODE */}
-              {editIndex === idx ? (
-                <div className="space-y-2 mt-4">
-                  <h4 className="font-semibold">✏️ Edit Categories</h4>
+                <p className="text-sm text-gray-500 mt-1">📅 {new Date(ev.date).toLocaleDateString()}</p>
 
-                  {editCategories.map((cat, i) => (
-                    <div key={i} className="flex gap-2">
-                      <input
-                        value={cat.name}
-                        placeholder="Category"
-                        onChange={e => updateCategory(i, 'name', e.target.value)}
-                        className="input"
-                      />
-
-                      <input
-                        type="number"
-                        value={cat.amount}
-                        placeholder="Amount"
-                        onChange={e => updateCategory(i, 'amount', e.target.value)}
-                        className="input"
-                      />
-                    </div>
-                  ))}
-
-                  <button
-                    onClick={addEditCategory}
-                    className="text-blue-600 text-sm"
-                  >
-                    + Add More
-                  </button>
-
-                  <div className="flex justify-end space-x-3 mt-2">
-                    <button
-                      onClick={() => saveUpdatedEvent(ev.id)}
-                      className="bg-blue-600 text-white px-4 py-1 rounded"
-                    >
-                      💾 Save
-                    </button>
-                    <button
-                      onClick={() => setEditIndex(null)}
-                      className="text-red-500"
-                    >
-                      Cancel
-                    </button>
-                  </div>
+                <div className="mt-3 text-sm text-gray-700 space-y-1">
+                  <p>💰 Budget: ₹{ev.totalBudget.toLocaleString()}</p>
+                  <p>🧾 Spent: ₹{totalSpent.toLocaleString()}</p>
                 </div>
-              ) : (
-                <>
-                  {/* HORIZONTAL BAR CHART */}
-                  <div className="mt-4 bg-gray-50 rounded-xl p-4">
-                    <h4 className="font-semibold text-gray-700 mb-2">
-                      Expense Breakdown
-                    </h4>
 
-                    <div className="w-full h-64">
-                      <ResponsiveContainer width="100%" height="100%">
-                        <BarChart data={data} layout="vertical" margin={{ left: 20 }}>
-                          <XAxis type="number" />
-                          <YAxis dataKey="name" type="category" width={80} />
-                          <Tooltip />
-                          <Legend />
-                          <Bar dataKey="value">
-                            {data.map((entry, index) => (
-                              <Cell
-                                key={index}
-                                fill={COLORS[index % COLORS.length]}
-                              />
-                            ))}
-                          </Bar>
-                        </BarChart>
-                      </ResponsiveContainer>
-                    </div>
-                  </div>
+                {/* PROGRESS BAR */}
+                <div className="w-full bg-gray-300 rounded-full h-4 mt-4 overflow-hidden">
+                  <div
+                    className={`h-4 rounded-full transition-all ${
+                      percentage < 80 ? 'bg-green-500' : percentage < 100 ? 'bg-yellow-500' : 'bg-red-500'
+                    }`}
+                    style={{ width: `${Math.min(percentage, 100)}%` }}
+                  ></div>
+                </div>
 
-                  <div className="flex justify-between mt-3">
+                <p
+                  className={`mt-3 font-bold text-lg ${
+                    saved >= 0 ? 'text-green-600' : 'text-red-600'
+                  }`}
+                >
+                  {saved >= 0
+                    ? `🎉 Saved ₹${saved.toLocaleString()}`
+                    : `⚠️ Overspent ₹${Math.abs(saved).toLocaleString()}`}
+                </p>
+
+                {/* EDIT MODE */}
+                {editId === ev.id ? (
+                  <div className="space-y-3 mt-5">
+                    <h4 className="font-semibold text-gray-700">✏️ Edit Categories</h4>
+
+                    {editCategories.map((cat, i) => (
+                      <div key={i} className="grid grid-cols-2 gap-2">
+                        <input
+                          value={cat.name}
+                          placeholder="Category"
+                          onChange={e => updateCategory(i, 'name', e.target.value)}
+                          className="px-3 py-2 rounded border border-gray-300"
+                        />
+                        <input
+                          type="number"
+                          value={cat.amount}
+                          placeholder="Amount"
+                          onChange={e => updateCategory(i, 'amount', e.target.value)}
+                          className="px-3 py-2 rounded border border-gray-300"
+                        />
+                      </div>
+                    ))}
+
                     <button
-                      onClick={() => handleEditCategory(idx)}
+                      type="button"
+                      onClick={addEditCategory}
                       className="text-blue-600 text-sm hover:underline"
                     >
-                      ✏️ Edit
+                      + Add Category
                     </button>
 
-                    <button
-                      onClick={() => handleDeleteEvent(ev.id)}
-                      className="text-red-600 text-sm hover:underline"
-                    >
-                      🗑 Delete
-                    </button>
+                    <div className="flex justify-end space-x-3 mt-4">
+                      <button
+                        onClick={() => saveUpdatedEvent(ev.id)}
+                        className="bg-blue-600 text-white px-5 py-2 rounded shadow hover:bg-blue-700"
+                      >
+                        💾 Save Changes
+                      </button>
+                      <button
+                        onClick={() => {
+                          setEditId(null);
+                          setEditCategories([]);
+                        }}
+                        className="text-red-600 hover:underline"
+                      >
+                        Cancel
+                      </button>
+                    </div>
                   </div>
-                </>
-              )}
-            </div>
-          );
-        })}
-      </div>
+                ) : (
+                  <>
+                    {/* BAR CHART */}
+                    {data.length > 0 && (
+                      <div className="mt-5 bg-gray-50 rounded-xl p-4">
+                        <h4 className="font-semibold text-gray-700 mb-3">
+                          Expense Breakdown
+                        </h4>
+
+                        <div className="w-full h-64">
+                          <ResponsiveContainer width="100%" height="100%">
+                            <BarChart data={data} layout="vertical" margin={{ left: 30, right: 20 }}>
+                              <XAxis type="number" />
+                              <YAxis dataKey="name" type="category" width={90} />
+                              <Tooltip formatter={(value) => `₹${value}`} />
+                              <Bar dataKey="value">
+                                {data.map((entry, index) => (
+                                  <Cell
+                                    key={`cell-${index}`}
+                                    fill={COLORS[index % COLORS.length]}
+                                  />
+                                ))}
+                              </Bar>
+                            </BarChart>
+                          </ResponsiveContainer>
+                        </div>
+                      </div>
+                    )}
+
+                    <div className="flex justify-between mt-5 text-sm">
+                      <button
+                        onClick={() => handleEditCategory(ev.id)}
+                        className="text-blue-600 hover:underline"
+                      >
+                        ✏️ Edit Categories
+                      </button>
+
+                      <button
+                        onClick={() => handleDeleteEvent(ev.id)}
+                        className="text-red-600 hover:underline"
+                      >
+                        🗑 Delete Event
+                      </button>
+                    </div>
+                  </>
+                )}
+              </div>
+            );
+          })}
+        </div>
+      )}
     </div>
   );
 }

@@ -1,10 +1,18 @@
-// src/components/ProtectedRoute.jsx
 import { Navigate } from 'react-router-dom';
+import useAuth from '../hooks/useAuth';
 
 const ProtectedRoute = ({ children }) => {
-  const token = localStorage.getItem("token") || document.cookie.includes("token=");
+  const { user, loading } = useAuth();
 
-  if (!token) {
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="text-xl text-gray-600">🔄 Loading...</div>
+      </div>
+    );
+  }
+
+  if (!user) {
     return <Navigate to="/" replace />;
   }
 

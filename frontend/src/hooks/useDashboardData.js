@@ -16,36 +16,30 @@ export default function useDashboardData(navigate) {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const token = localStorage.getItem("token");
-    if (!token) {
-      navigate("/");
-      return;
+  const loadData = async () => {
+    try {
+      const [expensesRes, monthlyRes, categoryRes, summaryRes] =
+        await Promise.all([
+          getExpenses(),
+          getMonthlySummary(),
+          getCategorySummary(),
+          getSummary(),
+        ]);
+
+      setExpenses(expensesRes);
+      setMonthlyData(monthlyRes);
+      setCategoryData(categoryRes);
+      setSummary(summaryRes);
+    } catch (err) {
+      console.error("Error loading dashboard:", err);
+      // Don't navigate here - let ProtectedRoute handle it
+    } finally {
+      setLoading(false);
     }
+  };
 
-    const loadData = async () => {
-      try {
-        const [expensesRes, monthlyRes, categoryRes, summaryRes] =
-          await Promise.all([
-            getExpenses(),
-            getMonthlySummary(),
-            getCategorySummary(),
-            getSummary(),
-          ]);
-
-        setExpenses(expensesRes);
-        setMonthlyData(monthlyRes);
-        setCategoryData(categoryRes);
-        setSummary(summaryRes);
-      } catch (err) {
-        console.error("Error loading dashboard:", err);
-        navigate("/");
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    loadData();
-  }, [navigate]);
+  loadData();
+}, []);
 
   const handleDelete = async (id) => {
     try {

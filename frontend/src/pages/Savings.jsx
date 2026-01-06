@@ -1,52 +1,63 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import {
-  AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid
+  AreaChart,
+  Area,
+  XAxis,
+  YAxis,
+  Tooltip,
+  ResponsiveContainer,
+  CartesianGrid,
 } from "recharts";
 
 function Savings() {
-  const [income, setIncome] = useState('');
+  const [income, setIncome] = useState("");
   const [summary, setSummary] = useState(null);
   const [monthlyData, setMonthlyData] = useState([]);
   const [goals, setGoals] = useState([]);
-  const [newGoal, setNewGoal] = useState({ name: '', amount: '' }); // existing goal add for DB
+  const [newGoal, setNewGoal] = useState({ name: "", amount: "" });
   const [topCategory, setTopCategory] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [showAI, setShowAI] = useState(false);
 
-  // AI advisor states
+  // AI Advisor states
   const [advisorInput, setAdvisorInput] = useState({
-    salary: '',
-    expenses: '',
-    goals: [] // { name, amount }
+    salary: "",
+    expenses: "",
+    goals: [],
   });
-  const [aiNewGoal, setAiNewGoal] = useState({ name: '', amount: '' }); // temp input for advisor goals
+  const [aiNewGoal, setAiNewGoal] = useState({ name: "", amount: "" });
   const [aiLoading, setAiLoading] = useState(false);
   const [aiResult, setAiResult] = useState(null);
   const [aiError, setAiError] = useState(null);
 
   const navigate = useNavigate();
-  const token = localStorage.getItem("token");
 
+  // Fetch all data on mount
   useEffect(() => {
-    fetchSummary();
-    fetchMonthlyData();
-    fetchGoals();
-    fetchTopCategory();
-    // eslint-disable-next-line
+    const loadData = async () => {
+      setLoading(true);
+      await Promise.all([
+        fetchSummary(),
+        fetchMonthlyData(),
+        fetchGoals(),
+        fetchTopCategory(),
+      ]);
+      setLoading(false);
+    };
+    loadData();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const fetchSummary = async () => {
     try {
       const res = await fetch("http://localhost:8080/api/expenses/summary", {
-        headers: {
-          Authorization: `Bearer ${token}`,
-          "Content-Type": "application/json"
-        },
-        credentials: "include"
+        credentials: "include",
       });
       if (res.ok) {
         const data = await res.json();
         setSummary(data);
-        setIncome(data.totalIncome || '');
+        setIncome(data.totalIncome?.toString() || "");
       }
     } catch (err) {
       console.error("fetchSummary error", err);
@@ -56,13 +67,13 @@ function Savings() {
   const fetchMonthlyData = async () => {
     try {
       const res = await fetch("http://localhost:8080/api/expenses/summary/monthly", {
-        headers: { Authorization: `Bearer ${token}` },
-        credentials: "include"
+        credentials: "include",
       });
       if (res.ok) {
         const data = await res.json();
-        const transformed = Object.entries(data).map(([month, value]) => ({ month, value }));
-        transformed.sort((a, b) => a.month.localeCompare(b.month));
+        const transformed = Object.entries(data)
+          .map(([month, value]) => ({ month, value }))
+          .sort((a, b) => a.month.localeCompare(b.month));
         setMonthlyData(transformed);
       }
     } catch (err) {
@@ -73,8 +84,7 @@ function Savings() {
   const fetchGoals = async () => {
     try {
       const res = await fetch("http://localhost:8080/api/savings/goals", {
-        headers: { Authorization: `Bearer ${token}` },
-        credentials: "include"
+        credentials: "include",
       });
       if (res.ok) {
         const data = await res.json();
@@ -88,17 +98,19 @@ function Savings() {
   const fetchTopCategory = async () => {
     try {
       const res = await fetch("http://localhost:8080/api/expenses/summary/category", {
-        headers: { Authorization: `Bearer ${token}` },
-        credentials: "include"
+        credentials: "include",
       });
       if (res.ok) {
         const data = await res.json();
-        const entries = Object.entries(data).map(([name, value]) => ({ name, value }));
+        const entries = Object.entries(data).map(([name, value]) => ({
+          name,
+          value,
+        }));
         if (entries.length > 0) {
-          const top = entries.reduce((prev, curr) => (curr.value > prev.value ? curr : prev), entries[0]);
+          const top = entries.reduce((prev, curr) =>
+            curr.value > prev.value ? curr : prev
+          );
           setTopCategory(top);
-        } else {
-          setTopCategory(null);
         }
       }
     } catch (err) {
@@ -107,288 +119,328 @@ function Savings() {
   };
 
   const updateIncome = async () => {
+    const incomeNum = parseFloat(income);
+    if (isNaN(incomeNum) || incomeNum <= 0) {
+      alert("Please enter a valid income amount.");
+      return;
+    }
+
     try {
       const res = await fetch(
-        `http://localhost:8080/api/expenses/update-income?income=${income}`,
+        `http://localhost:8080/api/expenses/update-income?income=${incomeNum}`,
         {
           method: "PUT",
-          headers: {
-            Authorization: `Bearer ${token}`,
-            "Content-Type": "application/json"
-          },
-          credentials: "include"
+          credentials: "include",
         }
       );
 
       if (res.ok) {
         await fetchSummary();
-        alert("Income updated successfully");
+        alert("Income updated successfully!");
       } else {
-        alert("Failed to update income");
+        alert("Failed to update income.");
       }
     } catch (err) {
-      console.error("updateIncome error", err);
-      alert("Failed to update income");
+      console.error(err);
+      alert("Error updating income.");
     }
   };
 
   const addGoal = async () => {
-    if (!newGoal.name || !newGoal.amount) {
-      alert("Please enter both name and amount");
+    const amount = parseFloat(newGoal.amount);
+    if (!newGoal.name.trim() || isNaN(amount) || amount <= 0) {
+      alert("Please enter a valid goal name and positive amount.");
       return;
     }
 
     try {
       const res = await fetch("http://localhost:8080/api/savings/goals", {
         method: "POST",
-        headers: {
-          Authorization: `Bearer ${token}`,
-          "Content-Type": "application/json"
-        },
+        headers: { "Content-Type": "application/json" },
         credentials: "include",
-        body: JSON.stringify(newGoal)
+        body: JSON.stringify({ name: newGoal.name.trim(), amount }),
       });
 
       if (res.ok) {
-        setNewGoal({ name: '', amount: '' });
+        setNewGoal({ name: "", amount: "" });
         fetchGoals();
       } else {
-        alert("Failed to add goal");
+        alert("Failed to add goal.");
       }
     } catch (err) {
-      console.error("addGoal error", err);
-      alert("Failed to add goal");
+      console.error(err);
+      alert("Error adding goal.");
     }
   };
 
   const deleteGoal = async (id) => {
+    if (!window.confirm("Delete this goal?")) return;
+
     try {
-      await fetch(`http://localhost:8080/api/savings/goals/${id}`, {
+      const res = await fetch(`http://localhost:8080/api/savings/goals/${id}`, {
         method: "DELETE",
-        headers: { Authorization: `Bearer ${token}` },
-        credentials: "include"
+        credentials: "include",
       });
-      fetchGoals();
+      if (res.ok) fetchGoals();
     } catch (err) {
-      console.error("deleteGoal error", err);
+      console.error(err);
     }
   };
 
   const addAiGoal = () => {
-    if (!aiNewGoal.name || !aiNewGoal.amount) {
-      alert("Please enter both name and amount for AI goal");
-      return;
-    }
-    const parsedAmount = Number(aiNewGoal.amount);
-    if (isNaN(parsedAmount) || parsedAmount <= 0) {
-      alert("Enter a valid positive amount");
+    const amount = parseFloat(aiNewGoal.amount);
+    if (!aiNewGoal.name.trim() || isNaN(amount) || amount <= 0) {
+      alert("Enter valid goal name and amount.");
       return;
     }
     setAdvisorInput({
       ...advisorInput,
-      goals: [...advisorInput.goals, { name: aiNewGoal.name.trim(), amount: parsedAmount }]
+      goals: [...advisorInput.goals, { name: aiNewGoal.name.trim(), amount }],
     });
-    setAiNewGoal({ name: '', amount: '' });
+    setAiNewGoal({ name: "", amount: "" });
   };
 
   const removeAiGoal = (idx) => {
-    const copy = [...advisorInput.goals];
-    copy.splice(idx, 1);
-    setAdvisorInput({ ...advisorInput, goals: copy });
+    setAdvisorInput({
+      ...advisorInput,
+      goals: advisorInput.goals.filter((_, i) => i !== idx),
+    });
   };
 
-  // AI call - calls backend which calls OpenRouter / Sherlock
   const generateAdvice = async () => {
     setAiError(null);
     setAiResult(null);
 
-    // Basic validation
-    const salaryNum = Number(advisorInput.salary || 0);
-    const expensesNum = Number(advisorInput.expenses || 0);
-    if (salaryNum <= 0) {
-      setAiError("Please enter a valid salary (> 0).");
-      return;
-    }
-    if (isNaN(expensesNum) || expensesNum < 0) {
-      setAiError("Please enter valid expenses (>= 0).");
+    const salary = parseFloat(advisorInput.salary);
+    const expenses = parseFloat(advisorInput.expenses || 0);
+
+    if (isNaN(salary) || salary <= 0) {
+      setAiError("Please enter a valid monthly salary.");
       return;
     }
 
     setAiLoading(true);
     try {
       const body = {
-        salary: salaryNum,
-        expenses: expensesNum,
+        salary,
+        expenses: isNaN(expenses) ? 0 : expenses,
         goals: advisorInput.goals.reduce((acc, g) => {
-          acc[g.name] = Number(g.amount);
+          acc[g.name] = g.amount;
           return acc;
-        }, {})
+        }, {}),
       };
 
       const res = await fetch("http://localhost:8080/api/savings/plan", {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`
-        },
+        headers: { "Content-Type": "application/json" },
         credentials: "include",
-        body: JSON.stringify(body)
+        body: JSON.stringify(body),
       });
 
       const data = await res.json();
+
       if (!res.ok) {
-        const message = data && data.message ? data.message : "AI request failed";
-        setAiError(message);
+        setAiError(data.message || "AI generation failed.");
       } else {
-        // Backend may return varied structure. Normalize common fields.
-        // Prefer structured JSON parsing fields (idealSavings, sipAmount, safeToSpend, recommendedTimelineMonths, goalTimelineMonths, monthlyPlan)
-        const normalized = {
+        setAiResult({
           idealSavings: data.idealSavings ?? data.monthlySavings ?? null,
-          sipAmount: data.sipAmount ?? data.sipAmount ?? null,
+          sipAmount: data.sipAmount ?? null,
           safeToSpend: data.safeToSpend ?? null,
-          recommendedTimelineMonths: data.recommendedTimelineMonths ?? data.recommendedTimelineMonths ?? null,
+          recommendedTimelineMonths: data.recommendedTimelineMonths ?? null,
           goalTimelineMonths: data.goalTimelineMonths ?? data.goalPlans ?? null,
-          monthlyPlan: data.monthlyPlan ?? data.monthlyPlan ?? [],
-          rawText: data.rawText ?? JSON.stringify(data)
-        };
-        setAiResult(normalized);
+          monthlyPlan: data.monthlyPlan ?? [],
+        });
       }
     } catch (err) {
-      console.error("generateAdvice error", err);
-      setAiError("Failed to contact AI service.");
+      console.error(err);
+      setAiError("Failed to connect to AI service.");
     } finally {
       setAiLoading(false);
     }
   };
 
-  if (!summary) return <div className="p-6">Loading...</div>;
+  // Helper: Indian currency formatting
+  const formatINR = (num) =>
+    new Intl.NumberFormat("en-IN", {
+      style: "currency",
+      currency: "INR",
+      maximumFractionDigits: 0,
+    }).format(num || 0);
 
-  const savingsRate = ((summary.savings / (summary.totalIncome || 1)) * 100).toFixed(1);
-  const incomeText = summary.totalIncome ?? 0;
-  const expensesText = summary.totalExpenses ?? 0;
-  const savingsText = summary.savings ?? 0;
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-4 border-blue-600 border-t-transparent mx-auto"></div>
+          <p className="mt-4 text-gray-600">Loading your savings data...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (!summary) {
+    return (
+      <div className="min-h-screen bg-gray-50 p-6">
+        <p className="text-center text-gray-600">
+          Unable to load data. Please try refreshing.
+        </p>
+      </div>
+    );
+  }
+
+  const savingsRate = summary.totalIncome
+    ? ((summary.savings / summary.totalIncome) * 100).toFixed(1)
+    : 0;
 
   return (
-    <div className="min-h-screen bg-gray-50 p-6">
+    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-blue-50 p-6">
       <button
-        onClick={() => navigate('/dashboard')}
-        className="mb-6 text-blue-600 hover:text-blue-800 font-medium"
+        onClick={() => navigate("/dashboard")}
+        className="mb-6 text-blue-700 hover:text-blue-900 font-medium flex items-center gap-2"
       >
         ← Back to Dashboard
       </button>
 
-      {/* Summary and right column layout */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Left: big summary (spans two cols on large screens) */}
-        <div className="lg:col-span-2 space-y-6">
-          {/* Summary cards row */}
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-            <div className="bg-white rounded-xl shadow-sm p-4 flex flex-col items-start gap-2 border">
-              <div className="text-sm text-gray-500">Income</div>
-              <div className="text-2xl font-bold text-green-600">₹{incomeText}</div>
-              <div className="text-xs text-gray-400">Monthly salary / total income</div>
+      <h1 className="text-4xl font-bold text-gray-800 mb-8">Savings Overview</h1>
+
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+        {/* Main Content - Left/Middle */}
+        <div className="lg:col-span-2 space-y-8">
+          {/* Summary Cards */}
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
+            <div className="bg-white rounded-2xl shadow-lg p-6 border border-gray-100">
+              <p className="text-sm text-gray-500">Monthly Income</p>
+              <p className="text-3xl font-bold text-green-600 mt-2">
+                {formatINR(summary.totalIncome)}
+              </p>
             </div>
 
-            <div className="bg-white rounded-xl shadow-sm p-4 flex flex-col items-start gap-2 border">
-              <div className="text-sm text-gray-500">Expenses</div>
-              <div className="text-2xl font-bold text-red-500">₹{expensesText}</div>
-              <div className="text-xs text-gray-400">Total expenses (period)</div>
+            <div className="bg-white rounded-2xl shadow-lg p-6 border border-gray-100">
+              <p className="text-sm text-gray-500">Total Expenses</p>
+              <p className="text-3xl font-bold text-red-600 mt-2">
+                {formatINR(summary.totalExpenses)}
+              </p>
             </div>
 
-            <div className="bg-white rounded-xl shadow-sm p-4 flex flex-col items-start gap-2 border">
-              <div className="text-sm text-gray-500">Savings</div>
-              <div className={`text-2xl font-bold ${savingsText >= 0 ? 'text-green-600' : 'text-red-600'}`}>₹{savingsText}</div>
-              <div className="text-xs text-gray-400">💡 You saved {savingsRate}% of your income</div>
+            <div className="bg-white rounded-2xl shadow-lg p-6 border border-gray-100">
+              <p className="text-sm text-gray-500">Current Savings</p>
+              <p
+                className={`text-3xl font-bold mt-2 ${
+                  summary.savings >= 0 ? "text-green-600" : "text-red-600"
+                }`}
+              >
+                {formatINR(summary.savings)}
+              </p>
+              <p className="text-sm text-gray-600 mt-2">
+                Savings Rate: <strong>{savingsRate}%</strong>
+              </p>
             </div>
           </div>
 
-          {/* Area Chart card */}
-          <div className="bg-white rounded-2xl p-4 shadow-sm border">
-            <div className="flex items-center justify-between mb-3">
-              <h3 className="text-lg font-semibold">📈 Monthly Expenses Trend</h3>
-              <div className="text-sm text-gray-500">Last 6 months</div>
-            </div>
-
-            <div style={{ width: "100%", height: 280 }}>
-              <ResponsiveContainer width="100%" height="100%">
-                <AreaChart data={monthlyData} margin={{ top: 10, right: 20, left: 0, bottom: 0 }}>
+          {/* Monthly Trend Chart */}
+          <div className="bg-white rounded-2xl shadow-lg p-6 border border-gray-100">
+            <h3 className="text-xl font-semibold mb-4">📈 Monthly Expenses Trend</h3>
+            {monthlyData.length === 0 ? (
+              <p className="text-center text-gray-500 py-12">
+                No monthly data available yet.
+              </p>
+            ) : (
+              <ResponsiveContainer width="100%" height={300}>
+                <AreaChart data={monthlyData}>
                   <defs>
                     <linearGradient id="colorExp" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="5%" stopColor="#06b6d4" stopOpacity={0.3}/>
-                      <stop offset="95%" stopColor="#06b6d4" stopOpacity={0}/>
+                      <stop offset="5%" stopColor="#3b82f6" stopOpacity={0.4} />
+                      <stop offset="95%" stopColor="#3b82f6" stopOpacity={0} />
                     </linearGradient>
                   </defs>
-                  <CartesianGrid strokeDasharray="3 3" stroke="#f3f4f6" />
+                  <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
                   <XAxis dataKey="month" tick={{ fontSize: 12 }} />
                   <YAxis tick={{ fontSize: 12 }} />
-                  <Tooltip />
-                  <Area type="monotone" dataKey="value" stroke="#06b6d4" fill="url(#colorExp)" name="Expenses" />
+                  <Tooltip formatter={(value) => formatINR(value)} />
+                  <Area
+                    type="monotone"
+                    dataKey="value"
+                    stroke="#3b82f6"
+                    strokeWidth={3}
+                    fill="url(#colorExp)"
+                    name="Expenses"
+                  />
                 </AreaChart>
               </ResponsiveContainer>
-            </div>
+            )}
           </div>
 
-          {/* Goals section (grid of cards) */}
-          <div className="bg-white rounded-2xl p-4 shadow-sm border">
-            <div className="flex items-center justify-between mb-4">
-              <h3 className="text-lg font-semibold">🎯 Savings Goals</h3>
-            </div>
+          {/* Savings Goals */}
+          <div className="bg-white rounded-2xl shadow-lg p-6 border border-gray-100">
+            <h3 className="text-xl font-semibold mb-6">🎯 Your Savings Goals</h3>
 
-            {/* Add new goal inline */}
-            <div className="flex flex-col sm:flex-row gap-3 mb-4 items-start">
+            <div className="flex flex-col sm:flex-row gap-4 mb-6">
               <input
                 type="text"
-                placeholder="Goal name (e.g., Laptop)"
+                placeholder="Goal name (e.g. New Phone)"
                 value={newGoal.name}
-                onChange={e => setNewGoal({ ...newGoal, name: e.target.value })}
-                className="border px-3 py-2 rounded w-full sm:w-1/2"
+                onChange={(e) => setNewGoal({ ...newGoal, name: e.target.value })}
+                className="flex-1 px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:outline-none"
               />
               <input
                 type="number"
-                placeholder="Target amount"
+                placeholder="Target ₹"
                 value={newGoal.amount}
-                onChange={e => setNewGoal({ ...newGoal, amount: e.target.value })}
-                className="border px-3 py-2 rounded w-full sm:w-1/3"
+                onChange={(e) => setNewGoal({ ...newGoal, amount: e.target.value })}
+                className="w-full sm:w-48 px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:outline-none"
               />
               <button
                 onClick={addGoal}
-                className="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700"
+                className="bg-green-600 hover:bg-green-700 text-white font-medium px-6 py-3 rounded-xl transition"
               >
                 Add Goal
               </button>
             </div>
 
             {goals.length === 0 ? (
-              <p className="text-gray-500">No goals yet. Add your first goal!</p>
+              <p className="text-center text-gray-500 py-8">
+                No goals yet. Start by adding one above!
+              </p>
             ) : (
-              <div className="grid sm:grid-cols-2 gap-4">
-                {goals.map(goal => {
-                  const savedAmount = Math.max(0, summary.savings || 0);
-                  const progress = Math.min(100, Math.round((savedAmount / (goal.amount || 1)) * 100));
+              <div className="grid sm:grid-cols-2 gap-5">
+                {goals.map((goal) => {
+                  const progress = Math.min(
+                    100,
+                    Math.round(
+                      (summary.savings / (goal.amount || 1)) * 100
+                    )
+                  );
                   return (
-                    <div key={goal.id} className="bg-gray-50 p-3 rounded-lg border">
-                      <div className="flex justify-between items-start">
+                    <div
+                      key={goal.id}
+                      className="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-xl p-5 border"
+                    >
+                      <div className="flex justify-between items-start mb-3">
                         <div>
-                          <div className="text-sm text-gray-600">{goal.name}</div>
-                          <div className="text-lg font-semibold">₹{goal.amount}</div>
+                          <h4 className="font-semibold text-lg">{goal.name}</h4>
+                          <p className="text-2xl font-bold text-indigo-700">
+                            {formatINR(goal.amount)}
+                          </p>
                         </div>
-                        <div className="text-sm text-gray-500">Progress: {progress}%</div>
+                        <span className="text-sm font-medium text-gray-600">
+                          {progress}%
+                        </span>
                       </div>
 
-                      <div className="w-full bg-gray-200 rounded-full h-3 mt-3 overflow-hidden">
+                      <div className="w-full bg-gray-200 rounded-full h-4 overflow-hidden">
                         <div
-                          className="h-3 bg-gradient-to-r from-green-400 to-green-600"
+                          className="h-full bg-gradient-to-r from-blue-500 to-indigo-600 transition-all duration-700"
                           style={{ width: `${progress}%` }}
                         />
                       </div>
 
-                      <div className="flex justify-between items-center mt-3">
-                        <div className="text-xs text-gray-500">
-                          {progress >= 100 ? "✅ Goal reached" : "Keep saving"}
-                        </div>
+                      <div className="flex justify-between mt-4 text-sm">
+                        <span className={progress >= 100 ? "text-green-600 font-medium" : "text-gray-600"}>
+                          {progress >= 100 ? "Goal Achieved!" : "Keep going!"}
+                        </span>
                         <button
                           onClick={() => deleteGoal(goal.id)}
-                          className="text-red-500 text-sm hover:underline"
+                          className="text-red-600 hover:text-red-800"
                         >
                           Delete
                         </button>
@@ -401,173 +453,199 @@ function Savings() {
           </div>
         </div>
 
-        {/* Right column: income updater + insights + AI advisor */}
-        <div className="space-y-6">
-          {/* Income updater card */}
-          <div className="bg-white rounded-xl p-4 shadow-sm border">
-            <h4 className="text-lg font-semibold mb-2">✏️ Update Income</h4>
+        {/* Right Sidebar */}
+        <div className="space-y-8">
+          {/* Update Income */}
+          <div className="bg-white rounded-2xl shadow-lg p-6 border border-gray-100">
+            <h4 className="text-xl font-semibold mb-4">Update Monthly Income</h4>
             <input
               type="number"
+              placeholder="Enter your salary"
               value={income}
-              onChange={e => setIncome(e.target.value)}
-              className="border px-3 py-2 rounded w-full mb-3"
+              onChange={(e) => setIncome(e.target.value)}
+              className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:outline-none mb-4"
             />
             <button
               onClick={updateIncome}
-              className="w-full bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700"
+              className="w-full bg-blue-600 hover:bg-blue-700 text-white font-medium py-3 rounded-xl transition"
             >
               Update Income
             </button>
-            <div className="text-xs text-gray-400 mt-3">Your income is used to calculate savings rate & recommendations</div>
           </div>
 
-          {/* Recommendations / AI insights */}
-          <div className="bg-white rounded-xl p-4 shadow-sm border">
-            <h4 className="text-lg font-semibold mb-2">💡 Recommendations</h4>
+          {/* Quick Insights */}
+          <div className="bg-white rounded-2xl shadow-lg p-6 border border-gray-100">
+            <h4 className="text-xl font-semibold mb-4">Quick Insights</h4>
 
             {summary.savings < 0 ? (
-              <p className="text-red-600">⚠️ You are overspending. Reduce your monthly expenses and prioritize essential payments.</p>
-            ) : Number(savingsRate) >= 30 ? (
-              <p className="text-green-600">✅ Great job! You're saving {savingsRate}% of your income — excellent discipline.</p>
+              <p className="text-red-600 font-medium">
+                You're overspending. Cut non-essential expenses.
+              </p>
+            ) : savingsRate >= 30 ? (
+              <p className="text-green-600 font-medium">
+                Excellent! You're saving {savingsRate}% — keep it up!
+              </p>
             ) : (
-              <p className="text-yellow-600">⏳ You're saving {savingsRate}%. Aim to save at least 30% — try automating a fixed SIP every month.</p>
+              <p className="text-amber-600">
+                Saving {savingsRate}%. Aim for 30%+ by automating savings.
+              </p>
             )}
 
             {topCategory && (
-              <div className="mt-3 text-sm text-gray-700">
-                <div className="font-medium">📌 Highest Spending Category</div>
-                <div className="mt-1 text-blue-700">
-                  <strong>{topCategory.name}</strong> — ₹{topCategory.value}
-                </div>
-                <div className="text-xs text-gray-400 mt-2">Tip: Review this category and look for 10–20% reductions.</div>
+              <div className="mt-5 p-4 bg-amber-50 rounded-xl">
+                <p className="text-sm font-medium">Highest Spending:</p>
+                <p className="text-lg font-bold text-amber-800">
+                  {topCategory.name} — {formatINR(topCategory.value)}
+                </p>
+                <p className="text-xs text-gray-600 mt-2">
+                  Tip: Try reducing this by 15–20%
+                </p>
               </div>
             )}
-
-            {/* Quick actions */}
-            <div className="mt-4 space-y-2">
-              <button
-                onClick={() => alert("Feature: Auto-SIP setup coming soon")}
-                className="w-full border px-3 py-2 rounded hover:bg-gray-50"
-              >
-                ➕ Setup Auto SIP (recommended)
-              </button>
-              <button
-                onClick={() => alert("Feature: AI insights coming soon")}
-                className="w-full border px-3 py-2 rounded hover:bg-gray-50"
-              >
-                🔍 Get AI Insights (soon)
-              </button>
-            </div>
           </div>
 
-          {/* AI Savings Advisor card */}
-          <div className="bg-white rounded-xl p-4 shadow-sm border">
-            <h4 className="text-lg font-semibold mb-2">🤖 AI Savings Advisor</h4>
-            <p className="text-sm text-gray-500 mb-3">Get a personalized saving plan, SIP suggestion and timeline for your goals.</p>
+          {/* AI Savings Advisor */}
+          <div className="bg-white rounded-2xl shadow-lg border border-gray-100">
+            {/* Header */}
+            <button
+              onClick={() => setShowAI(!showAI)}
+              className="w-full flex justify-between items-center p-6"
+            >
+              <h4 className="text-xl font-semibold">🤖 AI Savings Advisor</h4>
+              <span className="text-sm text-blue-600">
+                {showAI ? "Hide ▲" : "Show ▼"}
+              </span>
+            </button>
 
-            {/* Salary and Expenses inputs for advisor */}
-            <div className="space-y-2">
-              <input
-                type="number"
-                placeholder="Monthly salary (₹)"
-                value={advisorInput.salary}
-                onChange={e => setAdvisorInput({ ...advisorInput, salary: e.target.value })}
-                className="border px-3 py-2 rounded w-full"
-              />
-              <input
-                type="number"
-                placeholder="Expected monthly expenses (₹)"
-                value={advisorInput.expenses}
-                onChange={e => setAdvisorInput({ ...advisorInput, expenses: e.target.value })}
-                className="border px-3 py-2 rounded w-full"
-              />
-            </div>
-
-            {/* Goals list for advisor */}
-            <div className="mt-3">
-              <div className="text-sm font-medium mb-2">Goals</div>
-              {advisorInput.goals.length === 0 && <div className="text-xs text-gray-500 mb-2">No goals added yet.</div>}
-              <div className="space-y-2 mb-2">
-                {advisorInput.goals.map((g, idx) => (
-                  <div key={idx} className="flex justify-between items-center bg-gray-50 rounded p-2">
-                    <div className="text-sm">{g.name} — ₹{g.amount}</div>
-                    <button onClick={() => removeAiGoal(idx)} className="text-red-500 text-sm">Remove</button>
-                  </div>
-                ))}
-              </div>
-
-              {/* add goal inline */}
-              <div className="flex gap-2 items-center">
-                <input
-                  type="text"
-                  placeholder="Goal name (Laptop)"
-                  value={aiNewGoal.name}
-                  onChange={e => setAiNewGoal({ ...aiNewGoal, name: e.target.value })}
-                  className="border px-3 py-2 rounded w-1/2"
-                />
+            {/* Collapsible Body */}
+            {showAI && (
+              <div className="px-6 pb-6 space-y-4">
                 <input
                   type="number"
-                  placeholder="Amount"
-                  value={aiNewGoal.amount}
-                  onChange={e => setAiNewGoal({ ...aiNewGoal, amount: e.target.value })}
-                  className="border px-3 py-2 rounded w-1/3"
+                  placeholder="Monthly Salary (₹)"
+                  value={advisorInput.salary}
+                  onChange={(e) =>
+                    setAdvisorInput({ ...advisorInput, salary: e.target.value })
+                  }
+                  className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-purple-500 focus:outline-none"
                 />
-                <button onClick={addAiGoal} className="bg-blue-600 text-white px-3 py-2 rounded">Add</button>
-              </div>
-            </div>
 
-            {/* Generate */}
-            <div className="mt-4">
-              <button
-                onClick={generateAdvice}
-                disabled={aiLoading}
-                className="w-full bg-purple-600 text-white px-4 py-2 rounded hover:bg-purple-700 disabled:opacity-60"
-              >
-                {aiLoading ? "Generating..." : "Generate AI Savings Plan"}
-              </button>
-            </div>
+                <input
+                  type="number"
+                  placeholder="Expected Monthly Expenses (₹)"
+                  value={advisorInput.expenses}
+                  onChange={(e) =>
+                    setAdvisorInput({ ...advisorInput, expenses: e.target.value })
+                  }
+                  className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-purple-500 focus:outline-none"
+                />
 
-            {/* error */}
-            {aiError && <div className="mt-3 text-sm text-red-600">{aiError}</div>}
+                {/* Goals Input */}
+                <div className="border-t pt-4">
+                  <p className="font-medium mb-3">Add Goals for Timeline</p>
 
-            {/* AI Result */}
-            {aiResult && (
-              <div className="mt-4 p-3 rounded-lg bg-purple-50 border border-purple-200 text-sm text-gray-700">
-                <div className="font-medium text-purple-700 mb-2">AI Recommendation</div>
+                  {advisorInput.goals.map((g, i) => (
+                    <div
+                      key={i}
+                      className="flex justify-between items-center bg-purple-50 rounded-lg p-3 mb-2"
+                    >
+                      <span className="text-sm">
+                        {g.name} — {formatINR(g.amount)}
+                      </span>
+                      <button
+                        onClick={() => removeAiGoal(i)}
+                        className="text-red-600 hover:text-red-800"
+                      >
+                        Remove
+                      </button>
+                    </div>
+                  ))}
 
-                <div className="mb-2"><strong>Ideal monthly savings:</strong> ₹{aiResult.idealSavings ?? aiResult.monthlySavings ?? "-"}</div>
-                <div className="mb-2"><strong>SIP suggestion:</strong> ₹{aiResult.sipAmount ?? "-"}</div>
-                <div className="mb-2"><strong>Safe to spend:</strong> ₹{aiResult.safeToSpend ?? "-"}</div>
-                <div className="mb-2"><strong>Recommended timeline (months):</strong> {aiResult.recommendedTimelineMonths ?? "-"}</div>
+                  <div className="flex gap-2 mt-3">
+                    <input
+                      type="text"
+                      placeholder="Goal name"
+                      value={aiNewGoal.name}
+                      onChange={(e) =>
+                        setAiNewGoal({ ...aiNewGoal, name: e.target.value })
+                      }
+                      className="flex-1 px-3 py-2 border rounded-lg text-sm"
+                    />
 
-                <div className="mt-2">
-                  <div className="font-medium">Goal timelines</div>
-                  {aiResult.goalTimelineMonths && typeof aiResult.goalTimelineMonths === "object" ? (
-                    <ul className="list-disc list-inside mt-1">
-                      {Object.entries(aiResult.goalTimelineMonths).map(([k, v]) => (
-                        <li key={k}>{k}: {v} months</li>
-                      ))}
-                    </ul>
-                  ) : (
-                    <div className="text-xs text-gray-500">No timeline provided.</div>
-                  )}
+                    <input
+                      type="number"
+                      placeholder="₹ Amount"
+                      value={aiNewGoal.amount}
+                      onChange={(e) =>
+                        setAiNewGoal({ ...aiNewGoal, amount: e.target.value })
+                      }
+                      className="w-32 px-3 py-2 border rounded-lg text-sm"
+                    />
+
+                    <button
+                      onClick={addAiGoal}
+                      className="bg-purple-600 text-white px-4 py-2 rounded-lg text-sm"
+                    >
+                      Add
+                    </button>
+                  </div>
                 </div>
 
-                <div className="mt-3">
-                  <div className="font-medium">Monthly Plan</div>
-                  {aiResult.monthlyPlan && aiResult.monthlyPlan.length ? (
-                    <ol className="list-decimal list-inside mt-1">
-                      {aiResult.monthlyPlan.map((s, i) => <li key={i}>{s}</li>)}
-                    </ol>
-                  ) : (
-                    <div className="text-xs text-gray-500 mt-1">No monthly plan provided.</div>
-                  )}
-                </div>
+                {/* Generate Button */}
+                <button
+                  onClick={generateAdvice}
+                  disabled={aiLoading}
+                  className="w-full bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 text-white font-bold py-4 rounded-xl mt-5 disabled:opacity-60 transition"
+                >
+                  {aiLoading ? "Generating Plan..." : "Generate AI Plan"}
+                </button>
 
-                <div className="mt-3">
-                  <div className="font-medium">AI Raw Output (debug)</div>
-                  <pre className="bg-white p-2 rounded mt-1 text-xs max-h-40 overflow-auto">{aiResult.rawText}</pre>
-                </div>
+                {aiError && (
+                  <p className="text-red-600 text-sm mt-3 text-center">{aiError}</p>
+                )}
+
+                {/* AI Result */}
+                {aiResult && (
+                  <div className="mt-6 space-y-5 border-t pt-6">
+                    <h5 className="font-bold text-lg">📊 Your Personalized Plan</h5>
+
+                    <div className="grid grid-cols-2 gap-4 text-center">
+                      {aiResult.idealSavings > 0 && (
+                        <div className="bg-green-50 p-4 rounded-xl">
+                          <p className="text-xs text-gray-600">Save Monthly</p>
+                          <p className="text-xl font-bold text-green-700">
+                            {formatINR(aiResult.idealSavings)}
+                          </p>
+                        </div>
+                      )}
+
+                      {aiResult.safeToSpend > 0 && (
+                        <div className="bg-blue-50 p-4 rounded-xl">
+                          <p className="text-xs text-gray-600">Safe to Spend</p>
+                          <p className="text-xl font-bold text-blue-700">
+                            {formatINR(aiResult.safeToSpend)}
+                          </p>
+                        </div>
+                      )}
+                    </div>
+
+                    {aiResult.goalTimelineMonths && (
+                      <div className="bg-indigo-50 p-4 rounded-xl">
+                        <p className="font-medium mb-2">🎯 Goal Timeline</p>
+                        <ul className="text-sm space-y-1">
+                          {Object.entries(aiResult.goalTimelineMonths).map(
+                            ([goal, months]) => (
+                              <li key={goal} className="flex justify-between">
+                                <span>{goal}</span>
+                                <span className="font-semibold">{months} months</span>
+                              </li>
+                            )
+                          )}
+                        </ul>
+                      </div>
+                    )}
+                  </div>
+                )}
               </div>
             )}
           </div>

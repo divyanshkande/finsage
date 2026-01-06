@@ -36,6 +36,9 @@ public class DotenvEnvironmentPostProcessor implements EnvironmentPostProcessor 
                     case "SPRING_MAIL_USERNAME" -> envProps.put("spring.mail.username", value);
                     case "SPRING_MAIL_PASSWORD" -> envProps.put("spring.mail.password", value);
                     case "OPENROUTER_KEY" -> envProps.put("openrouter.key", value);
+                    case "OPENROUTER_MODEL" -> envProps.put("openrouter.model", value);
+                    case "OPENROUTER_URL" -> envProps.put("openrouter.url", value);
+                    case "FIREBASE_CREDENTIALS" -> envProps.put("firebase.credentials", value);
                 }
             }
         });

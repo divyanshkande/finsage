@@ -18,19 +18,18 @@ public class MyUserDetailsService implements UserDetailsService {
     private UserRepository repo;
 
     @Override
-    public UserDetails loadUserByUsername(String email) throws UsernameNotFoundException {
-        Optional<User> userOptional = repo.findByEmail(email); 
+    public UserDetails loadUserByUsername(String email)
+            throws UsernameNotFoundException {
 
-        User user = userOptional.orElseThrow(() -> 
-            new UsernameNotFoundException("User not found with email: " + email)
-        );
+        User user = repo.findByEmail(email)
+                .orElseThrow(() ->
+                        new UsernameNotFoundException("User not found"));
 
        
-        return new org.springframework.security.core.userdetails.User(
-                user.getEmail(),
-                user.getPassword(),
-                List.of(new SimpleGrantedAuthority("ROLE_" + user.getRole()))
-        );
+        return org.springframework.security.core.userdetails.User
+                .withUsername(user.getEmail())
+                .password(user.getPassword())   // must be BCrypt
+                .roles(user.getRole())          // ROLE_USER
+                .build();
     }
-
 }

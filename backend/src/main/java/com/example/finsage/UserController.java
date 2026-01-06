@@ -1,8 +1,11 @@
 package com.example.finsage;
-
+import java.security.Principal;
+import java.util.Map;
+import java.util.HashMap;
 import java.util.Optional;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseCookie;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.AuthenticationManager;
@@ -11,107 +14,116 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.web.bind.annotation.*;
 
 import jakarta.servlet.http.HttpServletResponse;
-@CrossOrigin(origins = "http://localhost:3000", allowCredentials = "true")
-
 @RestController
 @RequestMapping("/api/auth")
+@CrossOrigin(origins = "http://localhost:3000", allowCredentials = "true")
 public class UserController {
 
     @Autowired
     private UserService service;
 
-    @Autowired
-    private JWTService jwtService;
-
-    @Autowired
-    private UserRepository userRepository;
-
-    @Autowired
-    private PasswordEncoder passwordEncoder;
-
-    @Autowired
-    private AuthenticationManager authenticationManager;
-
-   
+    // ================= REGISTER =================
     @PostMapping("/register")
-    public ResponseEntity<?> registerUser(@RequestBody User user) {
-        if (userRepository.findByEmail(user.getEmail()).isPresent()) {
-            return ResponseEntity.badRequest().body("Email already exists");
+    public ResponseEntity register(@RequestBody User user) {
+        try {
+            // Check if user already exists
+            if (service.userExists(user.getEmail())) {
+                return ResponseEntity.status(HttpStatus.CONFLICT)
+                    .body(Map.of("error", "Email already registered"));
+            }
+            
+            service.register(user);
+            return ResponseEntity.ok(Map.of("message", "User registered successfully"));
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                .body(Map.of("error", "Registration failed: " + e.getMessage()));
         }
-
-        user.setPassword(passwordEncoder.encode(user.getPassword()));
-        user.setProvider("local"); // optional if you support OAuth
-        userRepository.save(user);
-
-        return ResponseEntity.ok("User registered successfully");
     }
 
-    // ✅ LOGIN USER with email
+    // ================= LOGIN =================
     @PostMapping("/login")
-    public ResponseEntity<AuthResponse> login(@RequestBody User user, HttpServletResponse response) {
+    public ResponseEntity login(
+            @RequestBody User user,
+            HttpServletResponse response) {
         try {
-            // Authenticate using email and password
-            authenticationManager.authenticate(
-                new UsernamePasswordAuthenticationToken(user.getEmail(), user.getPassword())
-            );
+            AuthResponse auth = service.login(user, response);
+            return ResponseEntity.ok(auth);
+        } catch (RuntimeException e) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                .body(Map.of("error", e.getMessage()));
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                .body(Map.of("error", "Login failed"));
+        }
+    }
 
-            // Get the authenticated user
-            Optional<User> authenticatedUserOptional = userRepository.findByEmail(user.getEmail());
-            if (authenticatedUserOptional.isEmpty()) {
-                return ResponseEntity.status(401).body(new AuthResponse(null, null));
-            }
+    // ================= GOOGLE LOGIN =================
+    @PostMapping("/google")
+    public ResponseEntity<?> googleLogin(
+            @RequestBody GoogleAuthRequest request,
+            HttpServletResponse response) {
 
-            User authenticatedUser = authenticatedUserOptional.get();
+        try {
+            AuthResponse auth = service.googleLogin(request.getIdToken(), response);
+            return ResponseEntity.ok(auth);
 
-            // Generate JWT token
-            String token = jwtService.generateToken(authenticatedUser.getEmail());
-
-            // Set token in cookie
-            ResponseCookie cookie = ResponseCookie.from("token", token)
-                    .httpOnly(true)
-                    .secure(false) // set to true if using HTTPS in prod
-                    .path("/")
-                    .maxAge(3600)
-                    .sameSite("Lax")
-                    .build();
-
-            response.setHeader("Set-Cookie", cookie.toString());
-
-            return ResponseEntity.ok(new AuthResponse(token, authenticatedUser.getEmail()));
+        } catch (RuntimeException e) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                    .body(Map.of("message", e.getMessage()));
 
         } catch (Exception e) {
-            return ResponseEntity.status(401).body(new AuthResponse(null, null));
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(Map.of("message", "Google login failed"));
         }
     }
 
-    // ✅ LOGOUT USER
-    @PostMapping("/logout")
-    public ResponseEntity<AuthResponse> logout(HttpServletResponse response) {
-        // Invalidate the JWT cookie
-        ResponseCookie cookie = ResponseCookie.from("token", "")
-                .httpOnly(true)
-                .secure(false)
-                .path("/")
-                .maxAge(0)
-                .sameSite("Lax")
-                .build();
 
-        response.setHeader("Set-Cookie", cookie.toString());
+    // ================= CURRENT USER =================
+    @GetMapping("/me")
+    public ResponseEntity getCurrentUser(Principal principal) {
+        if (principal == null) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                .body(Map.of("error", "Not authenticated"));
+        }
 
-        return ResponseEntity.ok(new AuthResponse(null, null));
+        try {
+            Map userData = service.getCurrentUser(principal.getName());
+            return ResponseEntity.ok(userData);
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                .body(Map.of("error", "User not found"));
+        }
     }
-    
-    
 
+    // ================= LOGOUT =================
+    @PostMapping("/logout")
+    public ResponseEntity logout(HttpServletResponse response) {
+        service.logout(response);
+        return ResponseEntity.ok(Map.of("message", "Logged out successfully"));
+    }
+
+    // ================= PASSWORD RESET =================
     @PostMapping("/forgot-password")
-    public ResponseEntity<String> forgotPassword(@RequestParam String email) {
-        service.sendResetLink(email);
-        return ResponseEntity.ok("Reset link sent");
+    public ResponseEntity forgot(@RequestParam String email) {
+        try {
+            service.sendResetLink(email);
+            return ResponseEntity.ok(Map.of("message", "Reset link sent"));
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                .body(Map.of("error", "Email not found"));
+        }
     }
 
     @PostMapping("/reset-password")
-    public ResponseEntity<String> resetPassword(@RequestParam String token, @RequestParam String newPassword) {
-        service.resetPassword(token, newPassword);
-        return ResponseEntity.ok("Password updated");
+    public ResponseEntity reset(
+            @RequestParam String token,
+            @RequestParam String newPassword) {
+        try {
+            service.resetPassword(token, newPassword);
+            return ResponseEntity.ok(Map.of("message", "Password updated"));
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                .body(Map.of("error", e.getMessage()));
+        }
     }
 }

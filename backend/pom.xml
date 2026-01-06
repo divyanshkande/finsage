@@ -47,6 +47,13 @@
     <artifactId>spring-boot-starter-oauth2-client</artifactId>
 </dependency>
 
+<dependency>
+    <groupId>com.google.firebase</groupId>
+    <artifactId>firebase-admin</artifactId>
+    <version>9.2.0</version>
+</dependency>
+
+
 <!-- 📧 Spring Boot Mail Starter -->
 <dependency>
     <groupId>org.springframework.boot</groupId>
@@ -106,6 +113,12 @@
     <artifactId>java-dotenv</artifactId>
     <version>5.2.2</version>
 </dependency>
+
+<dependency>
+    <groupId>org.springframework.boot</groupId>
+    <artifactId>spring-boot-starter-mail</artifactId>
+</dependency>
+
 
 
         <!-- Testing -->

@@ -19,9 +19,20 @@ public class ExpenseService {
 	 @Autowired
 	    private UserRepository userRepo;
 
-    public Expense addExpense(Expense expense) {
-        return expenseRepo.save(expense);
-    }
+	 public Expense addExpense(Expense expense) {
+
+		    // ✅ Default source if not provided
+		    if (expense.getSource() == null || expense.getSource().isBlank()) {
+		        expense.setSource("MANUAL");
+		    }
+
+		    // ✅ Safety: attach user if missing (JWT-based)
+		    if (expense.getUser() == null) {
+		        throw new RuntimeException("User must be attached to expense");
+		    }
+
+		    return expenseRepo.save(expense);
+		}
 
     public List<Expense> getTodayExpenses(User user) {
         return expenseRepo.findByUserAndDate(user, LocalDate.now());

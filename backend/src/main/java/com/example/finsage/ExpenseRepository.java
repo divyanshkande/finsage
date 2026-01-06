@@ -18,6 +18,24 @@ public interface ExpenseRepository extends JpaRepository<Expense,Long> {
 
     @Query("SELECT COALESCE(SUM(e.amount), 0) FROM Expense e WHERE e.user.email = :email AND e.category = 'expense'")
     double getTotalExpenses(@Param("email") String email);
+    boolean existsByUserAndDate(User user, LocalDate date);
+    @Query("""
+    		SELECT e.category, COUNT(e)
+    		FROM Expense e
+    		WHERE e.user.email = :email
+    		GROUP BY e.category
+    		ORDER BY COUNT(e) DESC
+    		""")
+    		List<Object[]> findMostUsedCategories(@Param("email") String email);
+    		@Query("""
+    				SELECT AVG(e.amount)
+    				FROM Expense e
+    				WHERE e.user.email = :email AND e.category = :category
+    				""")
+    				Double findAverageAmountForCategory(
+    				        @Param("email") String email,
+    				        @Param("category") String category
+    				);
 
 
 }

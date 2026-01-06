@@ -6,6 +6,7 @@ import java.util.List;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.web.authentication.WebAuthenticationDetailsSource;
@@ -17,7 +18,6 @@ import jakarta.servlet.ServletException;
 import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
-
 @Component
 public class JwtFilter extends OncePerRequestFilter {
 
@@ -25,13 +25,14 @@ public class JwtFilter extends OncePerRequestFilter {
     private JWTService jwtService;
 
     @Autowired
-    private MyUserDetailsService userDetailsService;
+    private UserRepository userRepository;
 
     private static final List<String> EXCLUDED_PATHS = List.of(
-        "/api/auth/login",
-        "/api/auth/register",
-        "/api/auth/forgot-password",
-        "/api/auth/reset-password"
+            "/api/auth/login",
+            "/api/auth/register",
+            "/api/auth/forgot-password",
+            "/api/auth/reset-password",
+            "/api/auth/google"
     );
 
     private boolean isExcluded(String path) {
@@ -39,58 +40,72 @@ public class JwtFilter extends OncePerRequestFilter {
     }
 
     @Override
-    protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain)
+    protected void doFilterInternal(
+            HttpServletRequest request,
+            HttpServletResponse response,
+            FilterChain filterChain)
             throws ServletException, IOException {
 
         String path = request.getRequestURI();
 
+        // ✅ Allow public routes
         if ("OPTIONS".equalsIgnoreCase(request.getMethod()) || isExcluded(path)) {
             filterChain.doFilter(request, response);
             return;
         }
 
         String token = null;
-        String email = null;
 
-        // From Authorization header
+        // Header
         String authHeader = request.getHeader("Authorization");
         if (authHeader != null && authHeader.startsWith("Bearer ")) {
             token = authHeader.substring(7);
         }
 
-        // From cookie fallback
+        // Cookie
         if (token == null && request.getCookies() != null) {
             token = Arrays.stream(request.getCookies())
-                    .filter(cookie -> "token".equals(cookie.getName()))
+                    .filter(c -> "token".equals(c.getName()))
                     .map(Cookie::getValue)
                     .findFirst()
                     .orElse(null);
         }
 
-        // Validate and authenticate
-        if (token != null) {
-            try {
-                email = jwtService.extractEmail(token);
+        // ✅ NO TOKEN → just continue (DON'T 401)
+        if (token == null) {
+            // No token = not authenticated, but let the request continue
+            // Protected endpoints will handle it
+            filterChain.doFilter(request, response);
+            return;
+        }
+        try {
+            String email = jwtService.extractEmail(token);
 
-                if (email != null && SecurityContextHolder.getContext().getAuthentication() == null) {
-                    UserDetails userDetails = userDetailsService.loadUserByUsername(email);
-                    if (jwtService.validateToken(token, userDetails)) {
-                        UsernamePasswordAuthenticationToken authToken =
-                                new UsernamePasswordAuthenticationToken(userDetails, null, userDetails.getAuthorities());
-                        authToken.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
-                        SecurityContextHolder.getContext().setAuthentication(authToken);
-                    }
+            if (email != null &&
+                    SecurityContextHolder.getContext().getAuthentication() == null) {
+
+                User user = userRepository.findByEmail(email)
+                        .orElseThrow(() -> new RuntimeException("User not found"));
+
+                String role = user.getRole();
+                if (!role.startsWith("ROLE_")) {
+                    role = "ROLE_" + role;
                 }
 
-            } catch (Exception e) {
-                response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
-                response.getWriter().write("Invalid or expired token");
-                return;
+                UsernamePasswordAuthenticationToken authToken =
+                        new UsernamePasswordAuthenticationToken(
+                                user.getEmail(),
+                                null,
+                                List.of(new SimpleGrantedAuthority(role))
+                        );
+
+                SecurityContextHolder.getContext().setAuthentication(authToken);
+
             }
-        } else {
-            response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
-            response.getWriter().write("Missing token");
-            return;
+
+        } catch (Exception e) {
+            // ❌ Invalid token → clear context but DO NOT crash frontend
+            SecurityContextHolder.clearContext();
         }
 
         filterChain.doFilter(request, response);

@@ -1,6 +1,8 @@
 package com.example.finsage;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
@@ -30,11 +32,23 @@ public class User {
     @Column(nullable = true) // null for Google Sign-in users
     private String password;
 
+    @Column(name = "full_name")
     private String fullName;
 
-    private String provider; // "local" or "google"
+    @Enumerated(EnumType.STRING)
+    
+    @Column(name = "provider",nullable = false) 
+    private AuthProvider authProvider; // LOCAL or GOOGLE
 
-    private String role = "USER";
+    public AuthProvider getAuthProvider() {
+		return authProvider;
+	}
+
+	public void setAuthProvider(AuthProvider authProvider) {
+		this.authProvider = authProvider;
+	}
+	 @Column(nullable = false)
+	private String role = "USER";
     
     private double income;
 
@@ -78,13 +92,7 @@ public class User {
 		this.fullName = fullName;
 	}
 
-	public String getProvider() {
-		return provider;
-	}
-
-	public void setProvider(String provider) {
-		this.provider = provider;
-	}
+	
 
 	public String getRole() {
 		return role;

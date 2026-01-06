@@ -21,6 +21,15 @@ public class AuthResponse {
         this.token = token;
     }
 
+    public String getEmail() {
+        return email;
+    }
+
+    public void setEmail(String email) {
+        this.email = email;
+    }
+
+    // Deprecated - for backward compatibility
     public String getUsername() {
         return email;
     }

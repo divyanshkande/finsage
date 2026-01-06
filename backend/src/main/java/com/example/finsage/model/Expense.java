@@ -31,8 +31,13 @@ public class Expense {
     private String category; // e.g., Food, Rent, etc.
 
     private Double amount;
+    @Column(nullable = false)
+    private String source;
 
-    private String description;
+
+   
+
+	private String description;
     @NotNull(message = "Date cannot be null")
     private LocalDate date;
 
@@ -90,6 +95,14 @@ public class Expense {
 	public void setDate(LocalDate date) {
 		this.date = date;
 	}
+	
+	 public String getSource() {
+			return source;
+		}
+
+		public void setSource(String source) {
+			this.source = source;
+		}
 
 	public User getUser() {
 		return user;

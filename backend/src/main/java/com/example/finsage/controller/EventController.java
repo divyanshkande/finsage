@@ -1,7 +1,8 @@
 package com.example.finsage.controller;
 
 
-import com.example.finsage.Events;
+
+import com.example.finsage.model.Events;
 import com.example.finsage.service.EventService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;

@@ -2,7 +2,7 @@ package com.example.finsage.model;
 
 import java.time.LocalDate;
 
-import com.example.finsage.User;
+
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;

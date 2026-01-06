@@ -7,10 +7,10 @@ import org.springframework.security.core.Authentication;
 
 import org.springframework.stereotype.Service;
 
-import com.example.finsage.EventRepository;
-import com.example.finsage.Events;
-import com.example.finsage.User;
-import com.example.finsage.UserRepository;
+import com.example.finsage.model.Events;
+import com.example.finsage.model.User;
+import com.example.finsage.repository.EventRepository;
+import com.example.finsage.repository.UserRepository;
 
 import java.util.List;
 import java.util.Map;

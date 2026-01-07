@@ -33,7 +33,6 @@ function Savings() {
 
   const navigate = useNavigate();
 
-  // Fetch all data on mount
   useEffect(() => {
     const loadData = async () => {
       setLoading(true);
@@ -46,7 +45,6 @@ function Savings() {
       setLoading(false);
     };
     loadData();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const fetchSummary = async () => {
@@ -243,12 +241,14 @@ function Savings() {
         setAiError(data.message || "AI generation failed.");
       } else {
         setAiResult({
-          idealSavings: data.idealSavings ?? data.monthlySavings ?? null,
-          sipAmount: data.sipAmount ?? null,
-          safeToSpend: data.safeToSpend ?? null,
-          recommendedTimelineMonths: data.recommendedTimelineMonths ?? null,
-          goalTimelineMonths: data.goalTimelineMonths ?? data.goalPlans ?? null,
+          idealSavings: data.idealSavings ?? 0,
+          sipAmount: data.sipAmount ?? 0,
+          safeToSpend: data.safeToSpend ?? 0,
+          emergencyFundMonths: data.emergencyFundMonths ?? 0,
+          recommendedTimelineMonths: data.recommendedTimelineMonths ?? 0,
+          goalTimelineMonths: data.goalTimelineMonths ?? {},
           monthlyPlan: data.monthlyPlan ?? [],
+          
         });
       }
     } catch (err) {
@@ -259,7 +259,6 @@ function Savings() {
     }
   };
 
-  // Helper: Indian currency formatting
   const formatINR = (num) =>
     new Intl.NumberFormat("en-IN", {
       style: "currency",
@@ -304,7 +303,7 @@ function Savings() {
       <h1 className="text-4xl font-bold text-gray-800 mb-8">Savings Overview</h1>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-        {/* Main Content - Left/Middle */}
+        {/* Main Content */}
         <div className="lg:col-span-2 space-y-8">
           {/* Summary Cards */}
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
@@ -406,9 +405,7 @@ function Savings() {
                 {goals.map((goal) => {
                   const progress = Math.min(
                     100,
-                    Math.round(
-                      (summary.savings / (goal.amount || 1)) * 100
-                    )
+                    Math.round((summary.savings / (goal.amount || 1)) * 100)
                   );
                   return (
                     <div
@@ -435,7 +432,13 @@ function Savings() {
                       </div>
 
                       <div className="flex justify-between mt-4 text-sm">
-                        <span className={progress >= 100 ? "text-green-600 font-medium" : "text-gray-600"}>
+                        <span
+                          className={
+                            progress >= 100
+                              ? "text-green-600 font-medium"
+                              : "text-gray-600"
+                          }
+                        >
                           {progress >= 100 ? "Goal Achieved!" : "Keep going!"}
                         </span>
                         <button
@@ -506,7 +509,6 @@ function Savings() {
 
           {/* AI Savings Advisor */}
           <div className="bg-white rounded-2xl shadow-lg border border-gray-100">
-            {/* Header */}
             <button
               onClick={() => setShowAI(!showAI)}
               className="w-full flex justify-between items-center p-6"
@@ -517,7 +519,6 @@ function Savings() {
               </span>
             </button>
 
-            {/* Collapsible Body */}
             {showAI && (
               <div className="px-6 pb-6 space-y-4">
                 <input
@@ -540,7 +541,6 @@ function Savings() {
                   className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-purple-500 focus:outline-none"
                 />
 
-                {/* Goals Input */}
                 <div className="border-t pt-4">
                   <p className="font-medium mb-3">Add Goals for Timeline</p>
 
@@ -591,7 +591,6 @@ function Savings() {
                   </div>
                 </div>
 
-                {/* Generate Button */}
                 <button
                   onClick={generateAdvice}
                   disabled={aiLoading}
@@ -604,12 +603,14 @@ function Savings() {
                   <p className="text-red-600 text-sm mt-3 text-center">{aiError}</p>
                 )}
 
-                {/* AI Result */}
+                {/* AI Result - COMPLETE VERSION */}
                 {aiResult && (
                   <div className="mt-6 space-y-5 border-t pt-6">
                     <h5 className="font-bold text-lg">📊 Your Personalized Plan</h5>
 
-                    <div className="grid grid-cols-2 gap-4 text-center">
+
+                    {/* Key Metrics */}
+                    <div className="grid grid-cols-2 gap-4">
                       {aiResult.idealSavings > 0 && (
                         <div className="bg-green-50 p-4 rounded-xl">
                           <p className="text-xs text-gray-600">Save Monthly</p>
@@ -627,20 +628,62 @@ function Savings() {
                           </p>
                         </div>
                       )}
+
+                      {aiResult.sipAmount > 0 && (
+                        <div className="bg-purple-50 p-4 rounded-xl">
+                          <p className="text-xs text-gray-600">SIP Amount</p>
+                          <p className="text-xl font-bold text-purple-700">
+                            {formatINR(aiResult.sipAmount)}
+                          </p>
+                        </div>
+                      )}
+
+                      {aiResult.emergencyFundMonths > 0 && (
+                        <div className="bg-amber-50 p-4 rounded-xl">
+                          <p className="text-xs text-gray-600">Emergency Fund</p>
+                          <p className="text-xl font-bold text-amber-700">
+                            {aiResult.emergencyFundMonths} months
+                          </p>
+                        </div>
+                      )}
                     </div>
 
-                    {aiResult.goalTimelineMonths && (
-                      <div className="bg-indigo-50 p-4 rounded-xl">
-                        <p className="font-medium mb-2">🎯 Goal Timeline</p>
-                        <ul className="text-sm space-y-1">
-                          {Object.entries(aiResult.goalTimelineMonths).map(
-                            ([goal, months]) => (
-                              <li key={goal} className="flex justify-between">
-                                <span>{goal}</span>
-                                <span className="font-semibold">{months} months</span>
-                              </li>
-                            )
-                          )}
+                    {/* Goal Timeline */}
+                    {aiResult.goalTimelineMonths &&
+                      Object.keys(aiResult.goalTimelineMonths).length > 0 && (
+                        <div className="bg-indigo-50 p-4 rounded-xl">
+                          <p className="font-medium mb-2">🎯 Goal Timeline</p>
+                          <ul className="text-sm space-y-1">
+                            {Object.entries(aiResult.goalTimelineMonths).map(
+                              ([goal, months]) => (
+                                <li key={goal} className="flex justify-between">
+                                  <span>{goal}</span>
+                                  <span className="font-semibold">
+                                    {months} months
+                                  </span>
+                                </li>
+                              )
+                            )}
+                          </ul>
+                        </div>
+                      )}
+
+                    {/* Monthly Action Plan */}
+                    {aiResult.monthlyPlan && aiResult.monthlyPlan.length > 0 && (
+                      <div className="bg-blue-50 p-4 rounded-xl">
+                        <p className="font-medium mb-3">📋 Monthly Action Plan</p>
+                        <ul className="space-y-2">
+                          {aiResult.monthlyPlan.map((step, idx) => (
+                            <li
+                              key={idx}
+                              className="flex gap-2 text-sm text-gray-800"
+                            >
+                              <span className="font-bold text-blue-600">
+                                {idx + 1}.
+                              </span>
+                              <span>{step}</span>
+                            </li>
+                          ))}
                         </ul>
                       </div>
                     )}

@@ -120,7 +120,6 @@ finsage/
 ![Loginpage](screenshots/Login-Register.png)  
 *Login/Register page where users authenticate using JWT or FireBase Google Login and proceed to their personalized dashboard.*
 
-
 ![Dashboard](screenshots/Dashboard.png)
 *User dashboard showing expense analytics, month-wise bar charts with hover insights, recent expenses and category wise breakdown of expenses pie chart showcase*
 

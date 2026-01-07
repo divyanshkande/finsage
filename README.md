@@ -1,7 +1,4 @@
-<!-- Banner -->
-<p align="center">
-  <img src="https://your-banner-image-link.com/banner.png" alt="Finsage Banner" width="100%" style="max-width: 800px;" />
-</p>
+
 
 <h1 align="center">💰 Finsage – Personal Finance Manager</h1>
 <p align="center"><b>Track • Save • Grow</b> – A smart, full-stack personal finance web app built with React and Spring Boot</p>
@@ -20,35 +17,78 @@
 - [Usage](#usage)
 - [Environment Variables](#environment-variables)
 - [Future Scope](#future-scope)
+- [Challenges&Learning](#-challenges--learnings)
 - [Contributing](#contributing)
 - [License](#license)
 
 ---
 
 ## 📖 About
-Finsage is a full-stack personal finance application designed to help users manage their income, expenses, budgets, and financial events. With secure authentication, intuitive budget planning, and insightful visual analytics, Finsage empowers users to take control of their finances.
+FinSage is a full-stack personal finance management web application that helps users track expenses, manage savings, plan financial goals, and analyze spending patterns.
+
+The application is designed by keeping real users in mind, focusing on secure authentication, meaningful insights, performance, and usability rather than just adding features.
 
 ---
 
 ## ✨ Features
-- **Transaction Management**: Perform CRUD operations for transactions, categories, and budgets.  
-- **Visual Analytics**: View interactive charts and summaries for monthly and yearly insights.  
-- **Secure Authentication**: Supports Google OAuth 2.0 and BCrypt password encoding.  
-- **Budget & Event Tracking**: Manage budgets and track financial events effortlessly.  
-- **Responsive Design**: Optimized for both mobile and desktop devices.  
-- **Category Filters**: Organize and filter expenses by categories for better clarity.
+🔐 ***Authentication & Security***
+
+JWT-based login and registration
+Password encryption using BCrypt
+Google Login using Firebase Authentication
+Proper logout and session handling
+
+📊 ***Dashboard & Analytics***
+
+Time-based greeting for users
+Month-wise expense bar charts with hover insights
+Category-wise expense analysis
+Last 5 recent expenses
+Spending suggestions based on expense patterns
+
+💰 ***Savings & Goal Management***
+
+Displays total income, money spent, and money saved
+Monthly expense trend using a line chart
+Goal tracking (e.g., buying a laptop) with percentage progress bar
+Shows highest spending category
+
+🤖 ***AI Savings Plan***
+
+User enters income, expenses, and goal details
+
+AI generates:
+Time required to achieve the goal
+SIP amount
+Emergency fund allocation
+
+Monthly spending limit
+Overall savings summary
+
+🎉 ***Event Budget Planning***
+
+Create events (wedding, birthday, etc.)
+Set budget and event date
+Add, update, or delete event expenses
+Track event spending with progress bars
+
+🧾 ***Expense Management with OCR***
+
+Add expenses manually using a form
+OCR-based bill extraction to auto-fill expense details
+Dynamic expense list generation
 
 ---
 
 ## 🛠 Tech Stack
-| **Category**       | **Technologies**                          |
-|--------------------|-------------------------------------------|
-| **Frontend**       | React (CRA), Tailwind CSS                 |
-| **Backend**        | Spring Boot, Spring Security, Java        |
-| **Database**       | MySQL                                    |
-| **Authentication** | BCrypt Password Encoder, Google OAuth 2.0 |
-| **Tools**          | Postman, Maven, npm                      |
-
+| **Category**       | **Technologies**                               |
+|--------------------|----------------------------------------------- |
+| **Frontend**       | React (CRA), Tailwind CSS                      |
+| **Backend**        | Spring Boot, Spring Security(JWT), Java        |
+| **Database**       | MySQL                                          |
+| **Authentication** | BCrypt Password Encoder, FireBase Google Login |
+| **Tools**          | Postman, Maven, npm                            |
+| **AI & OCR**       | AI APIs, OCR Integration                       |   
 ---
 
 ## 📁 Repository Structure
@@ -67,11 +107,39 @@ finsage/
 ---
 
 ## 📸 Screenshots
-| **Dashboard** | **Add Transaction** |
-|---------------|---------------------|
-| ![Dashboard](path-to-your-screenshot1.png) <br> *Overview of expenses and budgets* | ![Add Transaction](path-to-your-screenshot2.png) <br> *Form to add new transactions* |
 
-*Replace `path-to-your-screenshot1.png` and `path-to-your-screenshot2.png` with actual image paths.*
+![Homepage](screenshots/Home.png)  
+*Homepage with sections for Home, About & Login*
+
+![Aboutpage](screenshots/About.png)  
+*About page explaining FinSage and its purpose as a personal finance management application*
+
+![Key-Features](screenshots/Key-Features.png) 
+*Overview of key features including expense tracking, savings, goals, events, and AI insights.* 
+
+![Loginpage](screenshots/Login-Register.png)  
+*Login/Register page where users authenticate using JWT or FireBase Google Login and proceed to their personalized dashboard.*
+
+
+![Dashboard](screenshots/Dashboard.png)
+*User dashboard showing expense analytics, month-wise bar charts with hover insights, recent expenses and category wise breakdown of expenses pie chart showcase*
+
+![Savings](screenshots/Savings.png)
+*Savings page showing total income, money spent, money saved, monthly expense trend, and goal progress,highest spending expenditure*
+
+![AI Savings Advisor](screenshots/AI-Savings-Advisor.png) 
+*AI-powered savings advisor that generates a personalized savings plan based on income, monthly expenses, and financial goals.*
+
+
+![Events](screenshots/Events.png) 
+*Event budgeting page where users can create events, set budgets, add expenses, and track overall spending using progress bars.* 
+
+![Expense](screenshots/Expense.png)  
+*Expense management page displaying the list of user expenses with category and date details.*
+
+![Expense form and OCR Extraction](screenshots/Expense%20form%20and%20OCR%20EXTRACTION.png)  
+*Add expense form with OCR-based bill extraction to automatically fill expense details.*
+
 
 ---
 
@@ -89,9 +157,9 @@ finsage/
    git clone https://github.com/divyanshkande/finsage.git
    cd finsage
 ```
-   ---
- ⚡One-Time Setup for Combined Start
-Create a root-level `package.json`:
+
+ ⚡ One-Time Setup for Combined Start
+ Create a root-level `package.json`:
 ```bash
 npm init -y
 ```
@@ -148,24 +216,33 @@ spring.mail.port=${SPRING_MAIL_PORT}
 spring.mail.username=${SPRING_MAIL_USERNAME}
 spring.mail.password=${SPRING_MAIL_PASSWORD}
 ```
+---
+
+## 🧠 Challenges & Learnings
+
+Selecting the right AI API for clear and useful responses
+Implementing JWT-based authentication correctly
+Integrating Firebase Google Login with backend authorization
+Debugging token flow and authentication issues
+Avoided adding excessive UI features to keep the app fast
+Learned how real web apps work end-to-end using REST APIs
+
+---
+
 ## 🔮 Future Scope
 
-Multi-currency support
-Dark Mode support
+Dark mode
 AI-based expense prediction
-PWA (offline mode) support
+Monthly spending alerts
+Multi-currency support
+Export reports (PDF/Excel)
 
 
 ## 🤝 Contributing
 
-🤝 Contributing
-
 Fork the repository 🍴
-
 Create a feature branch 🌿
-
 Commit your changes ✅
-
 Open a Pull Request 🚀
 
 

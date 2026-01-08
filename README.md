@@ -87,7 +87,7 @@ Dynamic expense list generation
 | **Backend**        | Spring Boot, Spring Security(JWT), Java        |
 | **Database**       | MySQL                                          |
 | **Authentication** | BCrypt Password Encoder, FireBase Google Login |
-| **Tools**          | Postman, Maven, npm                            |
+| **Tools**          | Postman, Maven, VS Code npm                            |
 | **AI & OCR**       | AI APIs, OCR Integration                       |   
 ---
 
@@ -204,6 +204,9 @@ SPRING_MAIL_HOST=smtp.example.com
 SPRING_MAIL_PORT=587
 SPRING_MAIL_USERNAME=your_email@example.com
 SPRING_MAIL_PASSWORD=your_email_password
+TESSERACT_DATAPATH=your_tesseract_datapath
+API_MODEL=your_api_model
+API_KEY=your_api_key
 ```
 Your backend/src/main/resources/application.properties should use:
 ```bash
@@ -215,8 +218,8 @@ spring.mail.port=${SPRING_MAIL_PORT}
 spring.mail.username=${SPRING_MAIL_USERNAME}
 spring.mail.password=${SPRING_MAIL_PASSWORD}
 tesseract.datapath=${TESSERACT_DATAPATH}
-openrouter.api.key=${OPENROUTER_API_KEY}
-openrouter.api.model=${OPENROUTER_API_MODEL}
+api.key=${API_KEY}
+api.model=${API_MODEL}
 
 
 ```
@@ -239,6 +242,8 @@ Learned how real web apps work end-to-end using REST APIs
 ---
 
 ## 🔮 Future Scope
+
+Deploy the application
 
 Dark mode
 

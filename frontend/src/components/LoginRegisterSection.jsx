@@ -35,7 +35,7 @@ export default function LoginRegisterSection() {
 
     if (res.ok) {
       if (isLogin) {
-        // ✅ FIXED: Verify authentication before redirecting
+        // Verify authentication before redirecting
         const verifyRes = await fetch("http://localhost:8080/api/auth/me", {
           credentials: "include"
         });
@@ -69,7 +69,7 @@ export default function LoginRegisterSection() {
   const handleGoogleLogin = async () => {
   setLoading(true);
   try {
-    // Clear any existing auth state
+    
     await auth.signOut().catch(() => {});
     
     const result = await signInWithPopup(auth, googleProvider);
@@ -89,7 +89,7 @@ export default function LoginRegisterSection() {
     if (res.ok && data.token) {
       console.log("✅ Backend authentication successful");
       
-      // ✅ FIXED: Wait for cookie to be set and verify
+      
       await new Promise(resolve => setTimeout(resolve, 200));
       
       const verifyRes = await fetch("http://localhost:8080/api/auth/me", {

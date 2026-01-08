@@ -31,8 +31,8 @@ public class MyUserDetailsService implements UserDetailsService {
        
         return org.springframework.security.core.userdetails.User
                 .withUsername(user.getEmail())
-                .password(user.getPassword())   // must be BCrypt
-                .roles(user.getRole())          // ROLE_USER
+                .password(user.getPassword())   
+                .roles(user.getRole())          
                 .build();
     }
 }

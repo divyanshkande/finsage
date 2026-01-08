@@ -107,7 +107,7 @@ public class JwtFilter extends OncePerRequestFilter {
             }
 
         } catch (Exception e) {
-            // ❌ Invalid token → clear context but DO NOT crash frontend
+            //  Invalid token → clear context but DO NOT crash frontend
             SecurityContextHolder.clearContext();
         }
 

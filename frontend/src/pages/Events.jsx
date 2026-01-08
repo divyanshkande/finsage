@@ -36,7 +36,7 @@ function Events() {
       setEvents(sorted);
     } catch (err) {
       console.error("Error fetching events:", err);
-      // You can add a toast notification here if you have one
+      
       alert("Failed to load events. Please try again.");
     }
   };

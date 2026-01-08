@@ -166,7 +166,7 @@ function Expenses() {
     .filter(Boolean)
     .sort();
 
-  // Format date nicely
+  // Format date 
   const formatDate = (dateString) => {
     return new Date(dateString).toLocaleDateString("en-IN", {
       day: "2-digit",

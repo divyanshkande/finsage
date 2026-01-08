@@ -16,7 +16,7 @@ const Navbar = ({ isAuthenticated, setIsAuthenticated }) => {
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
 
-  // Close mobile menu when route changes
+ 
   useEffect(() => {
     setMenuOpen(false);
   }, [location.pathname]);

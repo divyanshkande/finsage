@@ -47,7 +47,7 @@ public class OCRController {
             Authentication authentication   // ✅ FROM JWT
     ) throws Exception {
 
-        // ✅ Extract email securely from JWT
+        //  Extract email securely from JWT
         String email = authentication.getName();
 
         User user = userRepo.findByEmail(email)
@@ -102,11 +102,7 @@ public class OCRController {
         if (category.isBlank()) category = classifyCategory(rawText);
         expense.setCategory(category);
 
-        // SAVE
-//        expenseService.addExpense(expense);
-//
-//        // RESPONSE (frontend editable)
-//        parsed.put("saved", true);
+      
         parsed.put("rawText", rawText);
         parsed.put("processedImage", processedPath);
         parsed.put("originalImage", filePath.toString());

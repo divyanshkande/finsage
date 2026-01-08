@@ -23,6 +23,7 @@ public class ExpenseSuggestion {
 	public void setId(Long id) {
 		this.id = id;
 	}
+	private String email;
 
 	public String getEmail() {
 		return email;
@@ -31,6 +32,8 @@ public class ExpenseSuggestion {
 	public void setEmail(String email) {
 		this.email = email;
 	}
+	private String category;
+
 
 	public String getCategory() {
 		return category;
@@ -39,6 +42,7 @@ public class ExpenseSuggestion {
 	public void setCategory(String category) {
 		this.category = category;
 	}
+	private double amount;
 
 	public double getAmount() {
 		return amount;
@@ -47,6 +51,7 @@ public class ExpenseSuggestion {
 	public void setAmount(double amount) {
 		this.amount = amount;
 	}
+	private LocalDate suggestedDate;
 
 	public LocalDate getSuggestedDate() {
 		return suggestedDate;
@@ -63,14 +68,8 @@ public class ExpenseSuggestion {
 	public void setStatus(Status status) {
 		this.status = status;
 	}
-
-	private String email;
-    private String category;
-    private double amount;
-    private LocalDate suggestedDate;
-
     @Enumerated(EnumType.STRING)
-    private Status status; // PENDING, DISMISSED, SNOOZED
+    private Status status; 
 
     public enum Status {
         PENDING, DISMISSED, SNOOZED

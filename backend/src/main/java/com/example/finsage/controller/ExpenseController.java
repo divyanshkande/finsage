@@ -77,14 +77,6 @@ public class ExpenseController {
         return ResponseEntity.ok(expenseService.getAllExpenses(user));
     }
 
-//    @DeleteMapping("/{id}")
-//    public ResponseEntity<?> delete(@PathVariable Long id, Authentication auth) {
-//        String email = auth.getName();  // Extract logged-in user email from token
-//        expenseService.deleteExpenseById(id, email);  
-//        return ResponseEntity.ok("Deleted");
-//    }
-
-   
 
     @GetMapping("/filter")
     public ResponseEntity<List<Expense>> filterExpenses(

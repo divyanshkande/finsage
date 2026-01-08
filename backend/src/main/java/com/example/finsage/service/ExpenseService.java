@@ -24,12 +24,12 @@ public class ExpenseService {
 
 	 public Expense addExpense(Expense expense) {
 
-		    // ✅ Default source if not provided
+		    //  Default source if not provided
 		    if (expense.getSource() == null || expense.getSource().isBlank()) {
 		        expense.setSource("MANUAL");
 		    }
 
-		    // ✅ Safety: attach user if missing (JWT-based)
+		    //  Safety: attach user if missing (JWT-based)
 		    if (expense.getUser() == null) {
 		        throw new RuntimeException("User must be attached to expense");
 		    }
@@ -45,9 +45,6 @@ public class ExpenseService {
         return expenseRepo.findByUser(user);
     }
 
-//    public void deleteExpense(Long id) {
-//        expenseRepo.deleteById(id);
-//    }
 
 	public Map<String, Object> getExpenseSummary(String email) {
         Optional<User> userOpt = userRepo.findByEmail(email);

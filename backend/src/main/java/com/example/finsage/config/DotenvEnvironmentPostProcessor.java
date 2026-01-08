@@ -20,7 +20,7 @@ public class DotenvEnvironmentPostProcessor implements EnvironmentPostProcessor 
 
         Map<String, Object> envProps = new HashMap<>();
 
-        // Keep all your existing Spring property mappings
+        // Keep  existing Spring property mappings
         dotenv.entries().forEach(entry -> {
             String key = entry.getKey();
             String value = entry.getValue();
@@ -43,7 +43,7 @@ public class DotenvEnvironmentPostProcessor implements EnvironmentPostProcessor 
             }
         });
 
-        // THIS LINE FIXES TESSERACT FOREVER
+        
         String tessPath = dotenv.get("TESSDATA_PATH");
         if (tessPath != null && !tessPath.trim().isEmpty()) {
             System.setProperty("tesseract.datapath", tessPath.trim());

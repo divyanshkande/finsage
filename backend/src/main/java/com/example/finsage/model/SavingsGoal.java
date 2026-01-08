@@ -5,17 +5,18 @@ import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import lombok.AllArgsConstructor;
-import lombok.Getter;
+
 import lombok.NoArgsConstructor;
-import lombok.Setter;
+
 
 @Entity
-@Getter
-@Setter
+
 @NoArgsConstructor
 @AllArgsConstructor
 public class SavingsGoal {
-
+	@Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+      private Long id;
     public Long getId() {
 		return id;
 	}
@@ -23,7 +24,7 @@ public class SavingsGoal {
 	public void setId(Long id) {
 		this.id = id;
 	}
-
+    private String name;
 	public String getName() {
 		return name;
 	}
@@ -31,7 +32,7 @@ public class SavingsGoal {
 	public void setName(String name) {
 		this.name = name;
 	}
-
+     private double amount;
 	public double getAmount() {
 		return amount;
 	}
@@ -39,7 +40,7 @@ public class SavingsGoal {
 	public void setAmount(double amount) {
 		this.amount = amount;
 	}
-
+     private String userEmail; 
 	public String getUserEmail() {
 		return userEmail;
 	}
@@ -48,16 +49,7 @@ public class SavingsGoal {
 		this.userEmail = userEmail;
 	}
 
-	@Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
-
-    private String name;
-    private double amount;
-
-    private String userEmail; // store user identity
-
-    private String status = "ACTIVE";
+   private String status = "ACTIVE";
 
 	public String getStatus() {
 		return status;

@@ -1,4 +1,3 @@
-// src/hooks/useDashboardData.js
 import { useState, useEffect } from "react";
 import {
   getExpenses,
@@ -32,7 +31,7 @@ export default function useDashboardData(navigate) {
       setSummary(summaryRes);
     } catch (err) {
       console.error("Error loading dashboard:", err);
-      // Don't navigate here - let ProtectedRoute handle it
+     
     } finally {
       setLoading(false);
     }

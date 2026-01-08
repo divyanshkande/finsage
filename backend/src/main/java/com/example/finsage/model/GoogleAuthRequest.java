@@ -2,6 +2,7 @@ package com.example.finsage.model;
 
 
 public class GoogleAuthRequest {
+	private String idToken;
     public String getIdToken() {
 		return idToken;
 	}
@@ -10,5 +11,5 @@ public class GoogleAuthRequest {
 		this.idToken = idToken;
 	}
 
-	private String idToken;
+	
 }

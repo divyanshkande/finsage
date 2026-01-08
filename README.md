@@ -120,7 +120,7 @@ finsage/
 ![Loginpage](screenshots/Login-Register.png)  
 *Login/Register page where users authenticate using JWT or FireBase Google Login and proceed to their personalized dashboard.*
 
-![Dashboard](screenshots/Dashboard.png)
+![DashBoard](screenshots/DashBoard.png)
 *User dashboard showing expense analytics, month-wise bar charts with hover insights, recent expenses and category wise breakdown of expenses pie chart showcase*
 
 ![Savings](screenshots/Savings.png)
@@ -214,16 +214,26 @@ spring.mail.host=${SPRING_MAIL_HOST}
 spring.mail.port=${SPRING_MAIL_PORT}
 spring.mail.username=${SPRING_MAIL_USERNAME}
 spring.mail.password=${SPRING_MAIL_PASSWORD}
+tesseract.datapath=${TESSERACT_DATAPATH}
+openrouter.api.key=${OPENROUTER_API_KEY}
+openrouter.api.model=${OPENROUTER_API_MODEL}
+
+
 ```
 ---
 
 ## 🧠 Challenges & Learnings
 
 Selecting the right AI API for clear and useful responses
+
 Implementing JWT-based authentication correctly
+
 Integrating Firebase Google Login with backend authorization
+
 Debugging token flow and authentication issues
+
 Avoided adding excessive UI features to keep the app fast
+
 Learned how real web apps work end-to-end using REST APIs
 
 ---
@@ -231,17 +241,24 @@ Learned how real web apps work end-to-end using REST APIs
 ## 🔮 Future Scope
 
 Dark mode
+
 AI-based expense prediction
+
 Monthly spending alerts
+
 Multi-currency support
+
 Export reports (PDF/Excel)
 
 
 ## 🤝 Contributing
 
 Fork the repository 🍴
+
 Create a feature branch 🌿
+
 Commit your changes ✅
+
 Open a Pull Request 🚀
 
 

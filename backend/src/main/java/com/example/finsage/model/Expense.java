@@ -23,28 +23,7 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 @Builder
 public class Expense {
-	
-	@Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
-
-    private String category; // e.g., Food, Rent, etc.
-
-    private Double amount;
-    @Column(nullable = false)
-    private String source;
-
-
-   
-
-	private String description;
-    @NotNull(message = "Date cannot be null")
-    private LocalDate date;
-
-    @ManyToOne
-    @JoinColumn(name = "user_id")
-    private User user; 
-    @Column(nullable = false)
+	@Column(nullable = false)
     private String title;
 
 
@@ -55,7 +34,9 @@ public class Expense {
 	public void setTitle(String title) {
 		this.title = title;
 	}
-
+	@Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long id;
 	public Long getId() {
 		return id;
 	}
@@ -63,6 +44,7 @@ public class Expense {
 	public void setId(Long id) {
 		this.id = id;
 	}
+	 private String category;
 
 	public String getCategory() {
 		return category;
@@ -71,6 +53,7 @@ public class Expense {
 	public void setCategory(String category) {
 		this.category = category;
 	}
+	 private Double amount;
 
 	public Double getAmount() {
 		return amount;
@@ -79,6 +62,7 @@ public class Expense {
 	public void setAmount(Double amount) {
 		this.amount = amount;
 	}
+	private String description;
 
 	public String getDescription() {
 		return description;
@@ -87,6 +71,8 @@ public class Expense {
 	public void setDescription(String description) {
 		this.description = description;
 	}
+	@NotNull(message = "Date cannot be null")
+    private LocalDate date;
 
 	public LocalDate getDate() {
 		return date;
@@ -95,6 +81,8 @@ public class Expense {
 	public void setDate(LocalDate date) {
 		this.date = date;
 	}
+	 @Column(nullable = false)
+    private String source;
 	
 	 public String getSource() {
 			return source;
@@ -103,6 +91,9 @@ public class Expense {
 		public void setSource(String source) {
 			this.source = source;
 		}
+		@ManyToOne
+    @JoinColumn(name = "user_id")
+    private User user;
 
 	public User getUser() {
 		return user;

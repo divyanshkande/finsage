@@ -1,12 +1,8 @@
 package com.example.finsage.config;
-
 import java.util.List;
-import org.springframework.web.cors.CorsUtils;
-
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.http.HttpMethod;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.AuthenticationProvider;
 import org.springframework.security.authentication.dao.DaoAuthenticationProvider;
@@ -41,10 +37,10 @@ public class SecurityConfig {
             .csrf(csrf -> csrf.disable())
             .cors(cors -> cors.configurationSource(corsConfigurationSource()))  // This adds CorsFilter BEFORE security
             .authorizeHttpRequests(auth -> auth
-                // Explicitly permit preflight requests (key fix for many cases)
+             
                 .requestMatchers(org.springframework.web.cors.CorsUtils::isPreFlightRequest).permitAll()
 
-                // Your public endpoints
+                
                 .requestMatchers(
                     "/api/auth/register",
                     "/api/auth/login",
@@ -88,10 +84,10 @@ public class SecurityConfig {
         CorsConfiguration config = new CorsConfiguration();
         config.setAllowedOrigins(List.of("http://localhost:3000"));
         config.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "OPTIONS"));
-        config.setAllowedHeaders(List.of("*")); // or specifically: "Authorization", "Content-Type"
+        config.setAllowedHeaders(List.of("*")); //  specifically: "Authorization", "Content-Type"
         config.setAllowCredentials(true);
         
-        // Critical: Expose Set-Cookie so browser accepts it
+        // Expose Set-Cookie so browser accepts it
         config.setExposedHeaders(List.of("Set-Cookie", "Authorization"));
         
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();

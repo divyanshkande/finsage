@@ -25,6 +25,7 @@ public class Events {
 	public void setId(Long id) {
 		this.id = id;
 	}
+	private String title;
 
 	public String getTitle() {
 		return title;
@@ -33,7 +34,7 @@ public class Events {
 	public void setTitle(String title) {
 		this.title = title;
 	}
-
+	private LocalDate date;
 	public LocalDate getDate() {
 		return date;
 	}
@@ -41,6 +42,7 @@ public class Events {
 	public void setDate(LocalDate date) {
 		this.date = date;
 	}
+	private double totalBudget;
 
 	public double getTotalBudget() {
 		return totalBudget;
@@ -49,6 +51,8 @@ public class Events {
 	public void setTotalBudget(double totalBudget) {
 		this.totalBudget = totalBudget;
 	}
+	 private double totalSpent;
+
 
 	public double getTotalSpent() {
 		return totalSpent;
@@ -57,6 +61,11 @@ public class Events {
 	public void setTotalSpent(double totalSpent) {
 		this.totalSpent = totalSpent;
 	}
+	@ElementCollection
+    @CollectionTable(name = "event_category_breakdown", joinColumns = @JoinColumn(name = "event_id"))
+    @MapKeyColumn(name = "category")
+    @Column(name = "amount")
+    private Map<String, Double> categoryBreakdown = new HashMap<>();
 
 	public Map<String, Double> getCategoryBreakdown() {
 		return categoryBreakdown;
@@ -65,6 +74,9 @@ public class Events {
 	public void setCategoryBreakdown(Map<String, Double> categoryBreakdown) {
 		this.categoryBreakdown = categoryBreakdown;
 	}
+	@ManyToOne
+    @JoinColumn(name = "user_id")
+    private User user;
 
 	public User getUser() {
 		return user;
@@ -74,21 +86,14 @@ public class Events {
 		this.user = user;
 	}
 
-	private String title;
+	
 
-    private LocalDate date;
+    
 
-    private double totalBudget;
+    
 
-    private double totalSpent;
+   
+    
 
-    @ElementCollection
-    @CollectionTable(name = "event_category_breakdown", joinColumns = @JoinColumn(name = "event_id"))
-    @MapKeyColumn(name = "category")
-    @Column(name = "amount")
-    private Map<String, Double> categoryBreakdown = new HashMap<>();
-
-    @ManyToOne
-    @JoinColumn(name = "user_id")
-    private User user;
+    
 }

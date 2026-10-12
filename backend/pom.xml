@@ -21,9 +21,33 @@
     <properties>
         <java.version>17</java.version>
         <jjwt.version>0.11.5</jjwt.version>
+        <spring-ai.version>1.0.0</spring-ai.version>
     </properties>
 
+    <!-- Manages the version of every org.springframework.ai:* artifact below,
+         so the spring-ai-starter-model-openai dependency doesn't need its own
+         explicit <version>. -->
+    <dependencyManagement>
+        <dependencies>
+            <dependency>
+                <groupId>org.springframework.ai</groupId>
+                <artifactId>spring-ai-bom</artifactId>
+                <version>${spring-ai.version}</version>
+                <type>pom</type>
+                <scope>import</scope>
+            </dependency>
+        </dependencies>
+    </dependencyManagement>
+
     <dependencies>
+        <!-- Spring AI: ChatClient + tool calling + structured output, used by the AI
+             savings advisor, financial assistant chat, and OCR structured extraction.
+             Version is managed centrally by the BOM above. -->
+        <dependency>
+            <groupId>org.springframework.ai</groupId>
+            <artifactId>spring-ai-starter-model-openai</artifactId>
+        </dependency>
+
         <!-- Spring Core Dependencies -->
         <dependency>
             <groupId>org.springframework.boot</groupId>
@@ -54,7 +78,7 @@
 </dependency>
 
 
-<!-- 📧 Spring Boot Mail Starter -->
+<!-- Spring Boot Mail Starter -->
 <dependency>
     <groupId>org.springframework.boot</groupId>
     <artifactId>spring-boot-starter-mail</artifactId>
@@ -119,8 +143,6 @@
     <artifactId>spring-boot-starter-mail</artifactId>
 </dependency>
 
-
-
         <!-- Testing -->
         <dependency>
             <groupId>org.springframework.boot</groupId>
@@ -135,7 +157,7 @@
         <dependency>
     <groupId>org.json</groupId>
     <artifactId>json</artifactId>
-    <version>20231013</version>   <!-- or latest: 20240915 at the time of writing -->
+    <version>20231013</version>
 </dependency>
 
 <dependency>
@@ -153,6 +175,28 @@
     <dependency>
         <groupId>com.fasterxml.jackson.core</groupId>
         <artifactId>jackson-databind</artifactId>
+    </dependency>
+
+    <!-- Redis: used for AI-response caching, login rate limiting, and JWT revocation -->
+    <dependency>
+        <groupId>org.springframework.boot</groupId>
+        <artifactId>spring-boot-starter-data-redis</artifactId>
+    </dependency>
+
+    <!-- Actuator: health checks, metrics, HikariCP pool monitoring -->
+    <dependency>
+        <groupId>org.springframework.boot</groupId>
+        <artifactId>spring-boot-starter-actuator</artifactId>
+    </dependency>
+
+    <!-- Flyway: database migration management -->
+    <dependency>
+        <groupId>org.flywaydb</groupId>
+        <artifactId>flyway-core</artifactId>
+    </dependency>
+    <dependency>
+        <groupId>org.flywaydb</groupId>
+        <artifactId>flyway-mysql</artifactId>
     </dependency>
     </dependencies>
 

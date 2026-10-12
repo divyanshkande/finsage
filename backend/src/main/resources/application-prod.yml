@@ -1,0 +1,80 @@
+spring:
+  application:
+    name: finsage
+
+  datasource:
+    driver-class-name: com.mysql.cj.jdbc.Driver
+    hikari:
+      maximum-pool-size: 20
+      minimum-idle: 5
+      connection-timeout: 30000
+      idle-timeout: 600000
+      max-lifetime: 1800000
+      leak-detection-threshold: 10000
+
+  jpa:
+    hibernate:
+      ddl-auto: validate
+    show-sql: false
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.MySQL8Dialect
+        format_sql: false
+
+  mail:
+    properties:
+      mail:
+        smtp:
+          auth: true
+          starttls:
+            enable: true
+
+  data:
+    redis:
+      host: ${REDIS_HOST}
+      port: ${REDIS_PORT}
+      password: ${REDIS_PASSWORD}
+
+  ai:
+    openai:
+      api-key: ${openrouter.key:}
+      base-url: https://openrouter.ai/api
+      chat:
+        completions-path: /v1/chat/completions
+        options:
+          model: ${openrouter.model:nvidia/nemotron-3.5-lightning:free}
+    retry:
+      max-attempts: 2
+
+server:
+  port: 8080
+  servlet:
+    session:
+      cookie:
+        secure: true
+        same-site: none
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info
+  endpoint:
+    health:
+      show-details: when-authorized
+      probes:
+        enabled: true
+
+app:
+  frontend-url: ${FRONTEND_URL}
+  cookie-secure: true
+  upload-dir: ${UPLOAD_DIR:/app/uploads}
+
+logging:
+  level:
+    root: INFO
+    com.example.finsage: INFO
+    org.springframework.security: WARN
+    org.hibernate.SQL: WARN
+  pattern:
+    console: "%d{yyyy-MM-dd HH:mm:ss} [%thread] %-5level %logger{36} - %msg%n"
